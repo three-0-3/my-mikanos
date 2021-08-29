@@ -232,14 +232,14 @@ EFI_STATUS EFIAPI UefiMain(
   }
 
   // Define new function type
-  typedef void EntryPointType(void);
+  typedef void EntryPointType(UINT64, UINT64);
 
   // Set entry point address as the pointer for the function
   UINT64 entry_addr = *(UINT64*)(kernel_base_addr + 24);
   EntryPointType* entry_point = (EntryPointType*)entry_addr;
  
   // Execute function and go to kernel
-  entry_point();
+  entry_point(gop->Mode->FrameBufferBase, gop->Mode->FrameBufferSize);
 
   Print(L"All done\n");
 
