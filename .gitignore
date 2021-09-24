@@ -1,3 +1,4 @@
 kernel/kernel.elf
 kernel/main.o
-kernel/disk.img
+kernel/graphics.o
+kernel/font.o

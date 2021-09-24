@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include "frame_buffer_config.hpp"
 
 struct PixelColor {
@@ -26,23 +25,11 @@ class PixelWriter {
 class RGBResv8BitPerColorPixelWriter : public PixelWriter {
   public:
     using PixelWriter::PixelWriter;
-
-    virtual void Write(int x, int y, const PixelColor& c) override {
-      auto p = PixelAt(x, y);
-      p[0] = c.r;
-      p[1] = c.g;
-      p[2] = c.b;
-    }
+    virtual void Write(int x, int y, const PixelColor& c) override;
 };
 
 class BGRResv8BitPerColorPixelWriter : public PixelWriter {
   public:
     using PixelWriter::PixelWriter;
-
-    virtual void Write(int x, int y, const PixelColor& c) override {
-      auto p = PixelAt(x, y);
-      p[0] = c.b;
-      p[1] = c.g;
-      p[2] = c.r;
-    }
+    virtual void Write(int x, int y, const PixelColor& c) override;
 };
