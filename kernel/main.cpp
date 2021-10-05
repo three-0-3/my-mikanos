@@ -6,6 +6,7 @@
 #include "font.hpp"
 #include "console.hpp"
 #include "pci.hpp"
+#include "logger.hpp"
 
 void operator delete(void* obj) noexcept {
 }
@@ -88,6 +89,11 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   // Write welcome message in the console
   console = new(console_buf) Console{*pixel_writer, kDesktopFGColor, kDesktopBGColor};
   printk("Welcome to MikanOS!!\n");
+  {
+    LogLevel log_level = kDebug;
+    SetLogLevel(log_level);
+    Log(kInfo, "Log Level: %d\n", log_level);
+  }
 
   // Write mouse cursor (not moving) at position (200, 100)
   for (int dy = 0; dy < kMouseCursorHeight; ++dy) {
@@ -102,7 +108,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
 
   // Run function to scan all the devices in PCI space and save it to the global variable
   auto err = pci::ScanAllBus();
-  printk("ScanAllBus: %s\n", err.Name());
+  Log(kDebug, "ScanAllBus: %s\n", err.Name());
 
   // Go through the devices list and print with vendor id & class code
   for (int i = 0; i < pci::num_device; ++i) {
@@ -110,7 +116,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     auto vendor_id = pci::ReadVendorId(dev.bus, dev.device, dev.function);
     auto device_id = pci::ReadDeviceId(dev.bus, dev.device, dev.function);
     auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
-    printk("%d.%d.%d: vend %04x, device, %04x, class %08x, head %02x\n",
+    Log(kDebug, "%d.%d.%d: vend %04x, device, %04x, class %08x, head %02x\n",
             dev.bus, dev.device, dev.function,
             vendor_id, device_id, class_code, dev.header_type);
   }
