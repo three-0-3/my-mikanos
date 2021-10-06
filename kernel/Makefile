@@ -12,7 +12,8 @@ all: $(TARGET)
 
 .PHONY: clean
 clean:
-	rm -rf *.o
+	find ./ -type f -name ".*.d" | xargs rm
+	find ./ -type f -name "*.o" | xargs rm
 
 kernel.elf: $(OBJS) Makefile
 	ld.lld $(LDFLAGS) -o kernel.elf $(OBJS) -lc
