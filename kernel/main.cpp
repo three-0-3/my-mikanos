@@ -8,6 +8,8 @@
 #include "pci.hpp"
 #include "logger.hpp"
 #include "mouse.hpp"
+#include "usb/xhci/xhci.hpp"
+#include "usb/classdriver/mouse.hpp"
 
 void operator delete(void* obj) noexcept {
 }
@@ -41,6 +43,10 @@ int printk(const char* format, ...) {
 // mouse cursor drawer
 char mouse_cursor_buf[sizeof(MouseCursor)];
 MouseCursor* mouse_cursor;
+
+void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
+  mouse_cursor->MoveRelative({displacement_x, displacement_y});
+}
 
 extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   // set pixel writer according to the frame buffer config
@@ -76,7 +82,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   console = new(console_buf) Console{*pixel_writer, kDesktopFGColor, kDesktopBGColor};
   printk("Welcome to MikanOS!!\n");
   {
-    LogLevel log_level = kDebug;
+    LogLevel log_level = kWarn;
     SetLogLevel(log_level);
     Log(kInfo, "Log Level: %d\n", log_level);
   }
@@ -116,10 +122,53 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     Log(kError, "xHC has not been found\n");
   }
 
+  // read BAR0 of xHC PIC config space 
   const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
   Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
+  // get MMIO base address
   const uint64_t xhc_mmio_base = xhc_bar.value & ~static_cast<uint64_t>(0xf);
   Log(kDebug, "xHC mmio_base = %08lx\n", xhc_mmio_base);
 
+  // declare xhc
+  usb::xhci::Controller xhc{xhc_mmio_base};
+
+  {
+    // initialize xhc
+    auto err = xhc.Initialize();
+    Log(kDebug, "xhc.Initialize: %s\n", err.Name());
+  }
+
+  Log(kInfo, "xHC starting\n");
+  xhc.Run();
+
+  // set mouse callback method
+  usb::HIDMouseDriver::default_observer = MouseObserver;
+
+  // configure port (necessary for QEMU)
+  for (int i = 1; i <= xhc.MaxPorts(); ++i) {
+    auto port = xhc.PortAt(i);
+    Log(kDebug, "Port %d: IsConnected=%d\n", i, port.IsConnected());
+
+    if (port.IsConnected()) {
+      if (auto err = ConfigurePort(xhc, port)) {
+        Log(kError, "failed to configure port: %s at %s:%d\n",
+            err.Name(), err.File(), err.Line());
+        continue;
+      }
+    }
+  }
+
+  // poll the events stored in the mouse
+  while (1) {
+    if (auto err = ProcessEvent(xhc)) {
+      Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
+          err.Name(), err.File(), err.Line());
+    }
+  }
+
+  while (1) __asm__("hlt");
+}
+
+extern "C" void __cxa_pure_virtual() {
   while (1) __asm__("hlt");
 }
