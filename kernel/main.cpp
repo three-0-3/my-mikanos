@@ -7,6 +7,7 @@
 #include "console.hpp"
 #include "pci.hpp"
 #include "logger.hpp"
+#include "mouse.hpp"
 
 void operator delete(void* obj) noexcept {
 }
@@ -15,42 +16,15 @@ void operator delete(void* obj) noexcept {
 const PixelColor kDesktopBGColor{45, 118, 237};
 const PixelColor kDesktopFGColor{255, 255, 255};
 
-// mouse drawing
-const int kMouseCursorWidth = 15;
-const int kMouseCursorHeight = 24;
-const char mouse_cursor_shape[kMouseCursorHeight][kMouseCursorWidth + 1] = {
-  "@              ",
-  "@@             ",
-  "@.@            ",
-  "@..@           ",
-  "@...@          ",
-  "@....@         ",
-  "@.....@        ",
-  "@......@       ",
-  "@.......@      ",
-  "@........@     ",
-  "@.........@    ",
-  "@..........@   ",
-  "@...........@  ",
-  "@............@ ",
-  "@......@@@@@@@@",
-  "@......@       ",
-  "@....@@.@      ",
-  "@...@ @.@      ",
-  "@..@   @.@     ",
-  "@.@    @.@     ",
-  "@@      @.@    ",
-  "@       @.@    ",
-  "         @.@   ",
-  "         @@@   ",
-};
-
+// writer
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 PixelWriter* pixel_writer;
 
+// console
 char console_buf[sizeof(Console)];
 Console* console;
 
+// print string (to delete?)
 int printk(const char* format, ...) {
   va_list ap;
   int result;
@@ -64,7 +38,12 @@ int printk(const char* format, ...) {
   return result;
 }
 
+// mouse cursor drawer
+char mouse_cursor_buf[sizeof(MouseCursor)];
+MouseCursor* mouse_cursor;
+
 extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
+  // set pixel writer according to the frame buffer config
   switch (frame_buffer_config.pixel_format) {
     case kPixelRGBResv8BitPerColor:
       pixel_writer = new(pixel_writer_buf) RGBResv8BitPerColorPixelWriter(frame_buffer_config);
@@ -86,6 +65,13 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   FillRectangle(*pixel_writer, {0, kFrameHeight - 50}, {kFrameWidth / 5, 50}, {80, 80, 80});
   DrawRectangle(*pixel_writer, {10, kFrameHeight - 40}, {kFrameWidth / 5 - 20, 30}, {160, 160, 160});
 
+  // create object for mouse cursor
+  mouse_cursor = new(mouse_cursor_buf) MouseCursor{
+    pixel_writer, kDesktopBGColor, {400, 200}
+  };
+  // mouse cursor move test
+  mouse_cursor->MoveRelative({0, 200});
+
   // Write welcome message in the console
   console = new(console_buf) Console{*pixel_writer, kDesktopFGColor, kDesktopBGColor};
   printk("Welcome to MikanOS!!\n");
@@ -93,17 +79,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     LogLevel log_level = kDebug;
     SetLogLevel(log_level);
     Log(kInfo, "Log Level: %d\n", log_level);
-  }
-
-  // Write mouse cursor (not moving) at position (200, 100)
-  for (int dy = 0; dy < kMouseCursorHeight; ++dy) {
-    for (int dx = 0; dx < kMouseCursorWidth; ++dx) {
-      if (mouse_cursor_shape[dy][dx] == '@') {
-        pixel_writer->Write(500 + dx, 100 + dy, {0, 0, 0});
-      } else if (mouse_cursor_shape[dy][dx] == '.') {
-        pixel_writer->Write(500 + dx, 100 + dy, {255, 255, 255});
-      }
-    }
   }
 
   // Run function to scan all the devices in PCI space and save it to the global variable
