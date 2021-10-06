@@ -5,6 +5,7 @@ class Error {
 		enum Code {
 			kSuccess,
 			kFull,
+			kIndexOutOfRange,
 		};
 
 		// Costructor
@@ -25,6 +26,7 @@ class Error {
 		static constexpr std::array<const char*, 3> code_names_ = {
 			"kSuccess",
 			"kFull",
+			"kIndexOutOfRange",
 		};
 		
 		Code code_;
@@ -33,3 +35,9 @@ class Error {
 };
 
 #define MAKE_ERROR(code) Error(code, __FILE__, __LINE__)
+
+template <class T>
+struct WithError {
+	T value;
+	Error error;
+};

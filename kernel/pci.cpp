@@ -16,12 +16,12 @@ namespace pci {
 	}
 
 	// Add bus/device/function/header type to the list
-	Error AddDevice(uint8_t bus, uint8_t device, uint8_t function, uint8_t header_type) {
+	Error AddDevice(const Device& device) {
 		if (num_device == devices.size()) {
 			return MAKE_ERROR(Error::kFull);
 		}
 
-		devices[num_device] = Device{bus, device, function, header_type};
+		devices[num_device] = device;
 		++num_device;
 		return MAKE_ERROR(Error::kSuccess);
 	}
@@ -31,21 +31,17 @@ namespace pci {
 	// Add device(function) info to the list
 	// Scan PCI-to-PCI bridge recursively
 	Error ScanFunction(uint8_t bus, uint8_t device, uint8_t function) {
+		// Get class code of this function
+		auto class_code = ReadClassCode(bus, device, function);
 		// Get header_type of this function
 		auto header_type = ReadHeaderType(bus, device, function);
+		Device dev{bus, device, function, header_type, class_code};
 		// Add the device of this function to the array
-		if (auto err = AddDevice(bus, device, function, header_type)) {
+		if (auto err = AddDevice(dev)) {
 			return err;
 		}
 
-		// Check the class code and search for the devices recursively if it's PCI-to-PCI Bridge
-		// Parse class code from the header type
-		auto class_code = ReadClassCode(bus, device, function);
-		uint8_t base = (class_code >> 24) & 0xffu;
-		uint8_t sub = (class_code >> 16) & 0xffu;
-		// base class 0x06 - Bridge
-		// sub  class 0x04 - PCI-to-PCI Bridge
-		if (base == 0x06u && sub == 0x04u) {
+		if (class_code.Match(0x06u, 0x04u)) {
 			auto bus_numbers = ReadBusNumbers(bus, device, function);
 			uint8_t secondary_bus = (bus_numbers >> 8) & 0xffu;
 			return pci::ScanBus(secondary_bus);
@@ -121,9 +117,14 @@ namespace pci {
 	}
 
   // Read the class code
-	uint32_t ReadClassCode(uint8_t bus, uint8_t device, uint8_t function) {
+	ClassCode ReadClassCode(uint8_t bus, uint8_t device, uint8_t function) {
 		WriteAddress(MakeAddress(bus, device, function, 0x08));
-		return ReadData();
+		auto reg = ReadData();
+		ClassCode cc;
+		cc.base      = (reg >> 24) & 0xffu;
+		cc.sub       = (reg >> 16) & 0xffu;
+		cc.interface = (reg >> 8) & 0xffu;
+		return cc;
 	}
 
 	// Read bus number register
@@ -159,5 +160,25 @@ namespace pci {
 			}
 		}
 		return MAKE_ERROR(Error::kSuccess);
+	}
+
+	uint32_t ReadConfReg(const Device& dev, uint8_t reg_addr) {
+		WriteAddress(MakeAddress(dev.bus, dev.device, dev.function, reg_addr));
+		return ReadData();
+	}
+
+	WithError<uint64_t> ReadBar(Device& device, unsigned int bar_index) {
+		if (bar_index >= 5) {
+			return {0, MAKE_ERROR(Error::kIndexOutOfRange)};
+		}
+
+		const auto addr = CalcBarAddress(bar_index);
+		const auto bar = ReadConfReg(device, addr);
+
+		const auto bar_upper = ReadConfReg(device, addr + 4);
+		return {
+			bar | (static_cast<uint64_t>(bar_upper) << 32),
+			MAKE_ERROR(Error::kSuccess)
+		};
 	}
 }
