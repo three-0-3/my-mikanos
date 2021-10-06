@@ -8,7 +8,7 @@ class Error {
 		};
 
 		// Costructor
-		Error(Code code) : code_{code} {}
+		Error(Code code, const char* file, int line) : code_{code}, line_{line}, file_{file} {}
 
 		// To enable the expression such as
 		// "auto err = AddDevice(bus, device, function, header_type)"
@@ -28,4 +28,8 @@ class Error {
 		};
 		
 		Code code_;
+		int line_;
+		const char* file_;
 };
+
+#define MAKE_ERROR(code) Error(code, __FILE__, __LINE__)

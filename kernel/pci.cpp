@@ -18,12 +18,12 @@ namespace pci {
 	// Add bus/device/function/header type to the list
 	Error AddDevice(uint8_t bus, uint8_t device, uint8_t function, uint8_t header_type) {
 		if (num_device == devices.size()) {
-			return Error::kFull;
+			return MAKE_ERROR(Error::kFull);
 		}
 
 		devices[num_device] = Device{bus, device, function, header_type};
 		++num_device;
-		return Error::kSuccess;
+		return MAKE_ERROR(Error::kSuccess);
 	}
 
 	Error ScanBus(uint8_t bus);
@@ -51,7 +51,7 @@ namespace pci {
 			return pci::ScanBus(secondary_bus);
 		}
 
-		return Error::kSuccess;
+		return MAKE_ERROR(Error::kSuccess);
 	}
 
 	// Scan the device of the specified number
@@ -63,7 +63,7 @@ namespace pci {
 		}
 		// If it is single function device, finish
 		if (IsSingleFunctionDevice(ReadHeaderType(bus, device, 0))) {
-			return Error::kSuccess;
+			return MAKE_ERROR(Error::kSuccess);
 		}
 
 		// If it is multi function device, scan for the other functions
@@ -75,7 +75,7 @@ namespace pci {
 				return err;
 			}
 		}
-		return Error::kSuccess;
+		return MAKE_ERROR(Error::kSuccess);
 	}
 	
 	// Scan bus of the specified number for PCI devices
@@ -89,7 +89,7 @@ namespace pci {
 				return err;
 			}
 		}
-		return Error::kSuccess;
+		return MAKE_ERROR(Error::kSuccess);
 	}
 
 	// Write the address to CONFIG_ADDRESS register
@@ -158,6 +158,6 @@ namespace pci {
 				return err;
 			}
 		}
-		return Error::kSuccess;
+		return MAKE_ERROR(Error::kSuccess);
 	}
 }
