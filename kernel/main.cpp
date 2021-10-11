@@ -144,6 +144,18 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
               reinterpret_cast<uint64_t>(IntHandlerXHCI), cs);
   LoadIDT(sizeof(idt) - 1, reinterpret_cast<uintptr_t>(&idt[0]));
 
+	// 0xfee00000 ~ 0xfee0400 (1024byte) in the memory space is the registers, not the actual memory
+	// 31:24 of 0xfee00020 is "local APIC ID" of the running CPU core
+  const uint8_t bsp_local_apic_id = *reinterpret_cast<const uint32_t*>(0xfee00020) >> 24;
+  pci::ConfigureMSIFixedDestination(
+    *xhc_dev,
+    bsp_local_apic_id,
+    pci::MSITriggerMode::kLevel,
+    pci::MSIDeliveryMode::kFixed,
+    InterruptVector::kXHCI,
+    0
+  );
+
   // read BAR0 of xHC PIC config space 
   const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
   Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
@@ -163,6 +175,12 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   Log(kInfo, "xHC starting\n");
   xhc.Run();
 
+  // substitute block scope xhc to file scope xhc
+  ::xhc = &xhc;
+  // sti instruction set the system flag "Interrupt Flag"
+  // to be ready for maskable hardware interrupts
+  __asm__("sti");
+
   // set mouse callback method
   usb::HIDMouseDriver::default_observer = MouseObserver;
 
@@ -177,14 +195,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
             err.Name(), err.File(), err.Line());
         continue;
       }
-    }
-  }
-
-  // poll the events stored in the mouse
-  while (1) {
-    if (auto err = ProcessEvent(xhc)) {
-      Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
-          err.Name(), err.File(), err.Line());
     }
   }
 

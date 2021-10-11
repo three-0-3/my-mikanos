@@ -70,4 +70,53 @@ namespace pci {
 	}
 
 	WithError<uint64_t> ReadBar(Device& device, unsigned int bar_index);
+
+	union CapabilityHeader {
+		uint32_t data;
+		struct {
+			uint32_t cap_id : 8;
+			uint32_t next_ptr : 8;
+			uint32_t cap : 16;
+		} __attribute__((packed)) bits;
+	} __attribute__((packed));
+
+	const uint8_t kCapabilityMSI = 0x05;
+	const uint8_t kCapabilityMSIX = 0x11;
+
+	CapabilityHeader ReadCapabilityHeader(const Device& dev, uint8_t addr);
+
+	struct MSICapability {
+		union {
+			uint32_t data;
+			struct {
+				uint32_t cap_id : 8;
+				uint32_t next_ptr : 8;
+				uint32_t msi_enable : 1;
+				uint32_t multi_msg_capable : 3;
+				uint32_t multi_msg_enable : 3;
+				uint32_t addr_64_capable : 1;
+				uint32_t per_vector_mask_capable : 1;
+				uint32_t : 7;
+			} __attribute__((packed)) bits;
+		} __attribute__((packed)) header;
+
+		uint32_t msg_addr;
+		uint32_t msg_upper_addr;
+		uint32_t msg_data;
+		uint32_t mask_bits;
+		uint32_t pending_bits;
+	} __attribute__((packed));
+
+	enum class MSITriggerMode {
+		kLevel = 1,
+	};
+
+	enum MSIDeliveryMode {
+		kFixed = 0b000,
+	};
+
+	Error ConfigureMSIFixedDestination(
+		const Device&dev, uint8_t apic_id,
+		MSITriggerMode trigger_mode, MSIDeliveryMode delivery_mode,
+		uint8_t vector, unsigned int num_vector_exponent);
 }
