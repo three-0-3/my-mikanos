@@ -10,6 +10,9 @@
 #include "mouse.hpp"
 #include "usb/xhci/xhci.hpp"
 #include "usb/classdriver/mouse.hpp"
+#include "interrupt.hpp"
+#include "asmfunc.h"
+
 
 void operator delete(void* obj) noexcept {
 }
@@ -46,6 +49,19 @@ MouseCursor* mouse_cursor;
 
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   mouse_cursor->MoveRelative({displacement_x, displacement_y});
+}
+
+usb::xhci::Controller* xhc;
+
+__attribute__((interrupt))
+void IntHandlerXHCI(InterruptFrame* frame) {
+  while (xhc->PrimaryEventRing()->HasFront()) {
+    if (auto err = ProcessEvent(*xhc)) {
+      Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
+          err.Name(), err.File(), err.Line());
+    }
+  }
+  NotifyEndOfInterrupt();
 }
 
 extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
@@ -121,6 +137,12 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   } else {
     Log(kError, "xHC has not been found\n");
   }
+
+  // Set Interrupt Descriptor Table and load to CPU
+  const uint16_t cs = GetCS();
+  SetIDTEntry(idt[InterruptVector::kXHCI], MakeIDTAttr(DescriptorType::kInterruptGate, 0),
+              reinterpret_cast<uint64_t>(IntHandlerXHCI), cs);
+  LoadIDT(sizeof(idt) - 1, reinterpret_cast<uintptr_t>(&idt[0]));
 
   // read BAR0 of xHC PIC config space 
   const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
