@@ -12,7 +12,7 @@
 #include "usb/classdriver/mouse.hpp"
 #include "interrupt.hpp"
 #include "asmfunc.h"
-
+#include "queue.hpp"
 
 void operator delete(void* obj) noexcept {
 }
@@ -53,14 +53,17 @@ void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
 
 usb::xhci::Controller* xhc;
 
+struct Message {
+  enum Type {
+    kInterruptXHCI,
+  } type;
+};
+
+ArrayQueue<Message>* main_queue;
+
 __attribute__((interrupt))
 void IntHandlerXHCI(InterruptFrame* frame) {
-  while (xhc->PrimaryEventRing()->HasFront()) {
-    if (auto err = ProcessEvent(*xhc)) {
-      Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
-          err.Name(), err.File(), err.Line());
-    }
-  }
+  main_queue->Push(Message{Message::kInterruptXHCI});
   NotifyEndOfInterrupt();
 }
 
@@ -102,6 +105,10 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     SetLogLevel(log_level);
     Log(kInfo, "Log Level: %d\n", log_level);
   }
+
+  std::array<Message, 32> main_queue_data;
+  ArrayQueue<Message> main_queue{main_queue_data};
+  ::main_queue = &main_queue;
 
   // Run function to scan all the devices in PCI space and save it to the global variable
   auto err = pci::ScanAllBus();
@@ -198,7 +205,35 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     }
   }
 
-  while (1) __asm__("hlt");
+  while (true) {
+    // disable interrupt
+    __asm__("cli");
+    // if there is no message in the queue, enable interrupt and halt
+    if (main_queue.Count() == 0) {
+      __asm__("sti\n\thlt");
+      continue;
+    }
+
+    // get one message
+    Message msg = main_queue.Front();
+    // delete one message
+    main_queue.Pop();
+    // enable interrupt
+    __asm__("sti");
+
+    switch (msg.type) {
+    case Message::kInterruptXHCI:
+      while (xhc.PrimaryEventRing()->HasFront()) {
+        if (auto err = ProcessEvent(xhc)) {
+          Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
+              err.Name(), err.File(), err.Line());
+        }
+      }
+      break;
+    default:
+      Log(kError, "Unknown message type: %d\n", msg.type);
+    }
+  }
 }
 
 extern "C" void __cxa_pure_virtual() {
