@@ -26,9 +26,12 @@ GetCS:
 
 global LoadIDT        ; void LoadIDT(uint16_t limit, uint64_t offset);
 LoadIDT:
+	push rbp						; save the base pointer
+	mov rbp, rsp				; save the current stack pointer in rbp
   sub rsp, 10
 	mov [rsp], di       ; limit
 	mov [rsp + 2], rsi  ; offset
 	lidt [rsp]
-	add rsp, 10
+	mov rsp, rbp				; load the stack pointer from rbp
+	pop rbp							; load the base pointer
 	ret
