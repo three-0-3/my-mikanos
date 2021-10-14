@@ -16,6 +16,7 @@
 #include "queue.hpp"
 #include "segment.hpp"
 #include "paging.hpp"
+#include "memory_manager.hpp"
 
 void operator delete(void* obj) noexcept {
 }
@@ -45,6 +46,9 @@ int printk(const char* format, ...) {
   console->PutString(s);
   return result;
 }
+
+char memory_manager_buf[sizeof(BitmapMemoryManager)];
+BitmapMemoryManager* memory_manager;
 
 // mouse cursor drawer
 char mouse_cursor_buf[sizeof(MouseCursor)];
@@ -131,21 +135,36 @@ extern "C" void KernelMainNewStack(
   // create and set page table (hierarchical paging structure)
   SetupIdentityPageTable();
 
-  // print memory map (only allocatables)
-  printk("memory_map: %p\n", &memory_map);
+  ::memory_manager = new(memory_manager_buf) BitmapMemoryManager;
+
+  // end address of the last avaialble memory descriptor
+  uintptr_t available_end = 0;
+  // initialize memory manager by checking UEFI memory map
   for (uintptr_t iter = reinterpret_cast<uintptr_t>(memory_map.buffer);
        iter < reinterpret_cast<uintptr_t>(memory_map.buffer) + memory_map.map_size;
        iter += memory_map.descriptor_size) {
     auto desc = reinterpret_cast<MemoryDescriptor*>(iter);
+    // mark allocated if there is any gap between the last checked end address and the current desc start address
+    if (available_end < desc->physical_start) {
+      memory_manager->MarkAllocated(
+        FrameID{available_end / kBytesPerFrame},
+        (desc->physical_start - available_end) / kBytesPerFrame);
+    }
+
+    const auto physical_end = desc->physical_start + desc->number_of_pages * kUEFIPageSize;
     if (IsAvailable(static_cast<MemoryType>(desc->type))) {
-      printk("type = %u, phys = %08lx - %08lx, pages = %lu, attr = %08lx\n",
-              desc->type,
-              desc->physical_start,
-              desc->physical_start + desc->number_of_pages * 4096 - 1,
-              desc->number_of_pages,
-              desc->attribute);
+      // if the current desc is available, extend available_end
+      available_end = physical_end;
+    } else {
+      // if not, mark allocated
+      memory_manager->MarkAllocated(
+        FrameID{desc->physical_start / kBytesPerFrame},
+        desc->number_of_pages * kUEFIPageSize / kBytesPerFrame);
     }
   }
+
+  // set the range of the memory manager using the result of the memory map check
+  memory_manager->SetMemoryRange(FrameID{1}, FrameID{available_end / kBytesPerFrame});
 
   std::array<Message, 32> main_queue_data;
   ArrayQueue<Message> main_queue{main_queue_data};
