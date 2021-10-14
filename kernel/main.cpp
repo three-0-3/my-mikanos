@@ -14,6 +14,7 @@
 #include "interrupt.hpp"
 #include "asmfunc.h"
 #include "queue.hpp"
+#include "segment.hpp"
 
 void operator delete(void* obj) noexcept {
 }
@@ -115,6 +116,16 @@ extern "C" void KernelMainNewStack(
     SetLogLevel(log_level);
     Log(kInfo, "Log Level: %d\n", log_level);
   }
+
+  // create and load gdt
+  SetupSegments();
+  // set segment registers
+  const uint16_t kernel_cs = 1 << 3;
+  const uint16_t kernel_ss = 2 << 3;
+  // set null descriptor for unused registers
+  SetDSAll(0);
+  // set code and data segment descriptor to CS/SS registers
+  SetCSSS(kernel_cs, kernel_ss);
 
   // print memory map (only allocatables)
   printk("memory_map: %p\n", &memory_map);

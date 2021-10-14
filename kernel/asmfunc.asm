@@ -36,6 +36,40 @@ LoadIDT:
 	pop rbp							; load the base pointer
 	ret
 
+global LoadGDT				; void LoadGDT(uint16_t limit, uint64_t offset);
+LoadGDT:
+	push rbp
+	mov rbp, rsp
+	sub rsp, 10
+	mov [rsp], di       ; limit
+	mov [rsp + 2], rsi  ; offset
+	lgdt [rsp]
+	mov rsp, rbp				; load the stack pointer from rbp
+	pop rbp							; load the base pointer
+	ret
+
+global SetDSAll				; void SetDSAll(uint16_t value);
+SetDSAll:
+	mov ds, di
+	mov es, di
+	mov fs, di
+	mov gs, di
+	ret
+
+global SetCSSS				; void SetCSSS(uint16_t cs, uint16_t ss);
+SetCSSS:
+	push rbp
+	mov rbp, rsp
+	mov ss, si					; ss
+	mov rax, .next			; to continue from .next after retf
+	push rdi						; cs
+	push rax						; rip
+	o64 retf						; use retf as mov cannot be used to set cs
+.next:
+	mov rsp, rbp
+	pop rbp
+	ret
+
 extern kernel_main_stack
 extern KernelMainNewStack
 
