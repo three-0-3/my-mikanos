@@ -35,3 +35,14 @@ LoadIDT:
 	mov rsp, rbp				; load the stack pointer from rbp
 	pop rbp							; load the base pointer
 	ret
+
+extern kernel_main_stack
+extern KernelMainNewStack
+
+global KernelMain
+KernelMain:
+	mov rsp, kernel_main_stack + 1024 * 1024	; set the bottom address for new stack
+	call KernelMainNewStack
+.fin:																				; IP never returns here but just in case
+	hlt
+	jmp .fin
