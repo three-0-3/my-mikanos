@@ -15,6 +15,7 @@
 #include "asmfunc.h"
 #include "queue.hpp"
 #include "segment.hpp"
+#include "paging.hpp"
 
 void operator delete(void* obj) noexcept {
 }
@@ -126,6 +127,9 @@ extern "C" void KernelMainNewStack(
   SetDSAll(0);
   // set code and data segment descriptor to CS/SS registers
   SetCSSS(kernel_cs, kernel_ss);
+
+  // create and set page table (hierarchical paging structure)
+  SetupIdentityPageTable();
 
   // print memory map (only allocatables)
   printk("memory_map: %p\n", &memory_map);
