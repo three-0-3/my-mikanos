@@ -1,5 +1,7 @@
 #include "memory_manager.hpp"
 
+#include <sys/types.h>
+
 #include "error.hpp"
 
 BitmapMemoryManager::BitmapMemoryManager()
@@ -72,4 +74,24 @@ void BitmapMemoryManager::SetBit(FrameID frame, bool allocated) {
 		// to mark available, get AND with inverted bit string
 		alloc_map_[line_index] &= ~(static_cast<MapLineType>(1) << bit_index);
 	}
+}
+
+extern "C" caddr_t program_break, program_break_end;
+
+// initialize the necessary variables (program_break, program_break_end) for sbrk
+Error InitializeHeap(BitmapMemoryManager& memory_manager) {
+	// memory frames to secure for heap
+  const int kHeapFrames = 64 * 512;
+	// allocate memory for heap by memory manager
+	const auto heap_start = memory_manager.Allocate(kHeapFrames);
+	if (heap_start.error) {
+		return heap_start.error;
+	}
+
+	// program_break is initialized to be the memory address of the heap start point
+	program_break = reinterpret_cast<caddr_t>(heap_start.value.ID() * kBytesPerFrame);
+	// program_break_end is initialized to be the memory address of the heap end point
+	program_break_end = program_break + kHeapFrames * kBytesPerFrame;
+
+	return MAKE_ERROR(Error::kSuccess);
 }
