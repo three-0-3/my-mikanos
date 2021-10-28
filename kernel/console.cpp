@@ -2,14 +2,13 @@
 
 #include <cstring>
 #include "font.hpp"
+#include "layer.hpp"
 
 // Initialize class variables with arguments
 // cursor initial position is (0, 0)
 Console::Console(PixelWriter& writer, const PixelColor& fg_color, const PixelColor& bg_color)
 	: writer_{writer}, fg_color_{fg_color}, bg_color_{bg_color},
-	  buffer_{}, cursor_row_{0}, cursor_column_{0} {
-
-}
+	  buffer_{}, cursor_row_{0}, cursor_column_{0} {}
 
 void Console::PutString(const char* s) {
 	while (*s) {
@@ -29,6 +28,14 @@ void Console::PutString(const char* s) {
 		// if the cursor is in the last column,
 		// the input character is not shown and ignored until the new line is input
 	}
+	if (layer_manager) {
+		layer_manager->Draw();
+	}
+}
+
+void Console::SetWriter(PixelWriter& writer) {
+	writer_ = writer;
+	Refresh();
 }
 
 void Console::Newline() {
@@ -52,5 +59,11 @@ void Console::Newline() {
 		}
 		// delete the buffer of the last row
 		memset(buffer_[kRows - 1], 0, kColumns + 1);
+	}
+}
+
+void Console::Refresh() {
+	for (int row = 0; row < kRows; ++row) {
+		WriteString(writer_, 0, 16 * row, buffer_[row], fg_color_);
 	}
 }

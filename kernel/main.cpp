@@ -17,13 +17,11 @@
 #include "segment.hpp"
 #include "paging.hpp"
 #include "memory_manager.hpp"
+#include "layer.hpp"
+#include "window.hpp"
 
 void operator delete(void* obj) noexcept {
 }
-
-// colors for desktop
-const PixelColor kDesktopBGColor{45, 118, 237};
-const PixelColor kDesktopFGColor{255, 255, 255};
 
 // writer
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
@@ -50,12 +48,14 @@ int printk(const char* format, ...) {
 char memory_manager_buf[sizeof(BitmapMemoryManager)];
 BitmapMemoryManager* memory_manager;
 
-// mouse cursor drawer
-char mouse_cursor_buf[sizeof(MouseCursor)];
-MouseCursor* mouse_cursor;
+// mouse layer id defined here to be used in MouseObserver
+unsigned int mouse_layer_id;
 
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
-  mouse_cursor->MoveRelative({displacement_x, displacement_y});
+  // move the mouse cursor window
+  layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
+  // draw all the layers
+  layer_manager->Draw();
 }
 
 usb::xhci::Controller* xhc;
@@ -93,25 +93,6 @@ extern "C" void KernelMainNewStack(
       pixel_writer = new(pixel_writer_buf) BGRResv8BitPerColorPixelWriter{frame_buffer_config};
       break;
   }
-
-  // draw desktop
-  const int kFrameWidth = frame_buffer_config.horizontal_resolution;
-  const int kFrameHeight = frame_buffer_config.vertical_resolution;
-
-  // background
-  FillRectangle(*pixel_writer, {0, 0}, {kFrameWidth, kFrameHeight - 50}, kDesktopBGColor);
-  // menu bar
-  FillRectangle(*pixel_writer, {0, kFrameHeight - 50}, {kFrameWidth, 50}, {1, 8, 17});
-  // start button (right in menu bar)
-  FillRectangle(*pixel_writer, {0, kFrameHeight - 50}, {kFrameWidth / 5, 50}, {80, 80, 80});
-  DrawRectangle(*pixel_writer, {10, kFrameHeight - 40}, {kFrameWidth / 5 - 20, 30}, {160, 160, 160});
-
-  // create object for mouse cursor
-  mouse_cursor = new(mouse_cursor_buf) MouseCursor{
-    pixel_writer, kDesktopBGColor, {400, 200}
-  };
-  // mouse cursor move test
-  mouse_cursor->MoveRelative({0, 200});
 
   // Write welcome message in the console
   console = new(console_buf) Console{*pixel_writer, kDesktopFGColor, kDesktopBGColor};
@@ -271,6 +252,47 @@ extern "C" void KernelMainNewStack(
       }
     }
   }
+
+  // create new window for background (no draw yet)
+  const int kFrameWidth = frame_buffer_config.horizontal_resolution;
+  const int kFrameHeight = frame_buffer_config.vertical_resolution;
+
+  auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight);
+  auto bgwriter = bgwindow->Writer();
+
+  // save background design data to bgwindow
+  DrawDesktop(*bgwriter);
+  // set background writer to console (hereafter, printk output will be saved to bgwindow)
+  console->SetWriter(*bgwriter);
+
+  // create new window for mouse cursor
+  auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight);
+  mouse_window->SetTransparentColor(kMouseTransparentColor);
+  // save mouse cursor desgin data to mouse_window
+  DrawMouseCursor(mouse_window->Writer(), {0, 0});
+
+  // create layer manager to control all the layers/windows
+  layer_manager = new LayerManager;
+  // set pixel writer (not window writer) to layer manager
+  layer_manager->SetWriter(pixel_writer);
+
+  // add new layer for background window
+  auto bglayer_id = layer_manager->NewLayer()
+    .SetWindow(bgwindow)
+    .Move({0, 0})
+    .ID();
+  auto mouse_layer_id = layer_manager->NewLayer()
+    .SetWindow(mouse_window)
+    .Move({200, 200})
+    .ID();
+
+  // set the drawing order of layers
+  layer_manager->UpDown(bglayer_id, 0);
+  layer_manager->UpDown(mouse_layer_id, 1);
+  // draw all the layers
+  layer_manager->Draw();
+
+
 
   while (true) {
     // disable interrupt

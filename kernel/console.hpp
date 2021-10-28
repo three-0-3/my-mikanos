@@ -9,9 +9,11 @@ class Console {
 	
 		Console(PixelWriter& writer, const PixelColor& fg_color, const PixelColor& bg_color);
 		void PutString(const char* s);
+		void SetWriter(PixelWriter& writer);
 
 	private:
 		void Newline();
+		void Refresh();
 
 		PixelWriter& writer_;
 		// fg color for character and bg color for background
