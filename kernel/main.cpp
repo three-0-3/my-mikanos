@@ -95,7 +95,7 @@ extern "C" void KernelMainNewStack(
   }
 
   // Write welcome message in the console
-  console = new(console_buf) Console{*pixel_writer, kDesktopFGColor, kDesktopBGColor};
+  console = new(console_buf) Console{pixel_writer, kDesktopFGColor, kDesktopBGColor};
   printk("Welcome to MikanOS!!\n");
   {
     LogLevel log_level = kWarn;
@@ -263,7 +263,7 @@ extern "C" void KernelMainNewStack(
   // save background design data to bgwindow
   DrawDesktop(*bgwriter);
   // set background writer to console (hereafter, printk output will be saved to bgwindow)
-  console->SetWriter(*bgwriter);
+  console->SetWriter(bgwriter);
 
   // create new window for mouse cursor
   auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight);
