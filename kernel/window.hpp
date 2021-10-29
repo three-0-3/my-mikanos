@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "graphics.hpp"
+#include "frame_buffer.hpp"
 
 class Window {
 	public:
@@ -12,7 +13,7 @@ class Window {
 				WindowWriter(Window& window) : window_{window} {}
 				// update the pixel data at (x, y) with color c
 				virtual void Write(Vector2D<int> pos, const PixelColor& c) override {
-					window_.At(pos) = c;
+					window_.Write(pos, c);
 				}
 				virtual int Width() const override { return window_.Width(); }
 				virtual int Height() const override { return window_.Height(); }
@@ -22,7 +23,7 @@ class Window {
 		};
 
 		// constructor
-		Window(int width, int height);
+		Window(int width, int height, PixelFormat shadow_format);
 		// deconstructor
 		~Window() = default;
 		// omit copy constructor
@@ -38,9 +39,10 @@ class Window {
 		WindowWriter* Writer();
 
 		// get the pixel data at the specified position
-		PixelColor& At(Vector2D<int> pos);
-		// get the pixel data at the specified position
 		const PixelColor& At(Vector2D<int> pos) const;
+		// write to the pixel data at the specified position and update shadow buffer
+		void Write(Vector2D<int> pos, PixelColor c);
+
 
 	  // get width of the drawing area by pixel
 		int Width() const;
@@ -56,4 +58,6 @@ class Window {
 		WindowWriter writer_{*this};
 		// if the pixel color equals to this color, the pixel does not be drawn
 		std::optional<PixelColor> transparent_color_{std::nullopt};
+
+		FrameBuffer shadow_buffer_{};
 };
