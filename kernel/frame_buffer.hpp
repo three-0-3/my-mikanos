@@ -12,6 +12,7 @@ class FrameBuffer {
 		// Initialize frame buffer by checking config
 		Error Initialize(const FrameBufferConfig& config);
 		Error Copy(Vector2D<int> pos, const FrameBuffer& src);
+		void Move(Vector2D<int> dst_pos, const Rectangle<int>& src);
 
 	  FrameBufferWriter& Writer() { return *writer_; }
 

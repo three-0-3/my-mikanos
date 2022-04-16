@@ -49,6 +49,9 @@ class Window {
 		// get height of the drawing area by pixel
 		int Height() const;
 
+		// Move rectangle in Window area
+		void Move(Vector2D<int> dst_pos, const Rectangle<int>& src);
+
 	private:
 	  // width/height of the drawing area of this window by pixel
 		int width_, height_;

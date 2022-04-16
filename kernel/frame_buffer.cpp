@@ -93,3 +93,26 @@ Error FrameBuffer::Copy(Vector2D<int> dst_pos, const FrameBuffer& src) {
 
 	return MAKE_ERROR(Error::kSuccess);
 }
+
+void FrameBuffer::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {
+	const auto bytes_per_pixel = BytesPerPixel(config_.pixel_format);
+	const auto bytes_per_scan_line = BytesPerScanLine(config_);
+
+	if (dst_pos.y > src.pos.y) { // move up
+		uint8_t* dst_buf = FrameAddrAt(dst_pos, config_);
+		const uint8_t* src_buf = FrameAddrAt(src.pos, config_);
+		for (int y = 0; y < src.size.y; ++y) {
+			memcpy(dst_buf, src_buf, bytes_per_pixel * src.size.x);
+			dst_buf += bytes_per_scan_line;
+			src_buf += bytes_per_scan_line;
+		}
+	} else { // move down
+		uint8_t* dst_buf = FrameAddrAt(dst_pos + Vector2D<int>{0, src.size.y - 1}, config_);
+		const uint8_t* src_buf = FrameAddrAt(src.pos + Vector2D<int>{0, src.size.y - 1}, config_);
+		for (int y = 0; y < src.size.y; ++y) {
+			memcpy(dst_buf, src_buf, bytes_per_pixel * src.size.x);
+			dst_buf -= bytes_per_scan_line;
+			src_buf -= bytes_per_scan_line;
+		}
+	}
+}

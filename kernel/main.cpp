@@ -276,7 +276,7 @@ extern "C" void KernelMainNewStack(
   // save background design data to bgwindow
   DrawDesktop(*bgwriter);
   // set background writer to console (hereafter, printk output will be saved to bgwindow)
-  console->SetWriter(bgwriter);
+  console->SetWindow(bgwindow);
 
   // create new window for mouse cursor
   auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight, frame_buffer_config.pixel_format);
