@@ -106,7 +106,8 @@ extern "C" void KernelMainNewStack(
   }
 
   // Write welcome message in the console
-  console = new(console_buf) Console{pixel_writer, kDesktopFGColor, kDesktopBGColor};
+  console = new(console_buf) Console{kDesktopFGColor, kDesktopBGColor};
+  console->SetWriter(pixel_writer);
   printk("Welcome to MikanOS!!\n");
   {
     LogLevel log_level = kWarn;
