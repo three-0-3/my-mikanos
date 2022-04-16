@@ -21,5 +21,3 @@ class FrameBuffer {
 		// unique_ptr as this FrameBuffer owns FrameBufferWriter
 		std::unique_ptr<FrameBufferWriter> writer_{};
 };
-
-int BitsPerPixel(PixelFormat format);
