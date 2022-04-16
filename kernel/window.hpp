@@ -32,7 +32,7 @@ class Window {
 		Window& operator=(const Window& rhs) = delete;
 
 		// write the data saved in window with position offset
-		void DrawTo(PixelWriter& writer, Vector2D<int> position);
+		void DrawTo(FrameBuffer& dst, Vector2D<int> position);
 		// set the transparent color
 		void SetTransparentColor(std::optional<PixelColor> c);
 		// window writer associated with this window

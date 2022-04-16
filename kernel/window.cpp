@@ -21,19 +21,16 @@ Window::Window(int width, int height, PixelFormat shadow_format) : width_{width}
 	}
 }
 
-void Window::DrawTo(PixelWriter& writer, Vector2D<int> position) {
+void Window::DrawTo(FrameBuffer& dst, Vector2D<int> position) {
 	// if transparent color is not set, just draw all the pixel
 	if (!transparent_color_) {
-		for (int y = 0; y < Height(); ++y) {
-			for (int x = 0; x < Width(); ++x) {
-				writer.Write(position + Vector2D<int>{x, y}, At(Vector2D<int>{x, y}));
-			}
-		}
+		dst.Copy(position, shadow_buffer_);
 		return;
 	}
 
 	// if transparent color is set in this window, not draw the pixel if the color equals that color
 	const auto tc = transparent_color_.value();
+	auto& writer = dst.Writer();
 	for (int y = 0; y < Height(); ++y) {
 		for (int x = 0; x < Width(); ++x) {
 			const auto c = At(Vector2D<int>{x, y});

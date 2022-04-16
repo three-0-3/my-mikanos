@@ -2,6 +2,7 @@
 
 #include "graphics.hpp"
 #include "window.hpp"
+#include "frame_buffer.hpp"
 
 class Layer {
 	public:
@@ -21,7 +22,7 @@ class Layer {
 		Layer& MoveRelative(Vector2D<int> pos_diff);
 
 		// write the pixel in window data by writer
-		void DrawTo(PixelWriter& writer) const;
+		void DrawTo(FrameBuffer& screen) const;
 
 	private:
 		unsigned int id_;
@@ -32,7 +33,7 @@ class Layer {
 class LayerManager {
 	public:
 		// set the writer for DrawTo method
-		void SetWriter(PixelWriter* writer);
+		void SetWriter(FrameBuffer* screen);
 		// create new layer and save in layer manager
 		Layer& NewLayer();
 
@@ -52,7 +53,7 @@ class LayerManager {
 		void Hide(unsigned int id);
 
 	private:
-		PixelWriter* writer_{nullptr};
+		FrameBuffer* screen_{nullptr};
 		// container to keep all the layers (including hidden layers)
 		std::vector<std::unique_ptr<Layer>> layers_{};
 		// container to keep the visible layers only

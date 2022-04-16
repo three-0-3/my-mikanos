@@ -278,10 +278,16 @@ extern "C" void KernelMainNewStack(
   // save mouse cursor desgin data to mouse_window
   DrawMouseCursor(mouse_window->Writer(), {0, 0});
 
+  FrameBuffer screen;
+  if (auto err = screen.Initialize(frame_buffer_config)) {
+    Log(kError, "failed to initialize frame buffer: %s at %s:%d\n",
+        err.Name(), err.File(), err.Line());
+  }
+
   // create layer manager to control all the layers/windows
   layer_manager = new LayerManager;
   // set pixel writer (not window writer) to layer manager
-  layer_manager->SetWriter(pixel_writer);
+  layer_manager->SetWriter(&screen);
 
   // add new layer for background window
   auto bglayer_id = layer_manager->NewLayer()
