@@ -279,10 +279,8 @@ extern "C" void KernelMainNewStack(
   DrawMouseCursor(mouse_window->Writer(), {0, 0});
   mouse_position = {200, 200};
 
-  auto main_window = std::make_shared<Window>(160, 68, frame_buffer_config.pixel_format);
+  auto main_window = std::make_shared<Window>(160, 52, frame_buffer_config.pixel_format);
   DrawWindow(*main_window->Writer(), "Hellow Window");
-  WriteString(*main_window->Writer(), {24, 28}, "Welcome to", {0, 0, 0});
-  WriteString(*main_window->Writer(), {24, 44}, " MikanOS world!", {0, 0, 0});
 
   FrameBuffer screen;
   if (auto err = screen.Initialize(frame_buffer_config)) {
@@ -316,14 +314,26 @@ extern "C" void KernelMainNewStack(
   // draw all the layers
   layer_manager->Draw();
 
+  // counter to show on the main window
+  char str[128];
+  unsigned int count = 0;
 
 
   while (true) {
+    // counter to show on the main window
+    ++count;
+    sprintf(str, "%010u", count);
+    // cleanup the previous number
+    FillRectangle(*main_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
+    // display the counter
+    WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
+    layer_manager->Draw();
+
     // disable interrupt
     __asm__("cli");
     // if there is no message in the queue, enable interrupt and halt
     if (main_queue.Count() == 0) {
-      __asm__("sti\n\thlt");
+      __asm__("sti\n");
       continue;
     }
 
