@@ -19,7 +19,6 @@
 #include "memory_manager.hpp"
 #include "layer.hpp"
 #include "window.hpp"
-#include "timer.hpp"
 
 void operator delete(void* obj) noexcept {
 }
@@ -42,12 +41,6 @@ int printk(const char* format, ...) {
   result = vsprintf(s, format, ap);
   va_end(ap);
 
-  StartLAPICTimer();
-  console->PutString(s);
-  auto elapsed = LAPICTimerElapsed();
-  StopLAPICTimer();
-
-  sprintf(s, "[%9d]", elapsed);
   console->PutString(s);
   return result;
 }
@@ -61,12 +54,8 @@ unsigned int mouse_layer_id;
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   // move the mouse cursor window
   layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
-  StartLAPICTimer();
   // draw all the layers
   layer_manager->Draw();
-  auto elapsed = LAPICTimerElapsed();
-  StopLAPICTimer();
-  printk("MouseObserver: elapsed = %u\n", elapsed);
 }
 
 usb::xhci::Controller* xhc;
@@ -114,8 +103,6 @@ extern "C" void KernelMainNewStack(
     SetLogLevel(log_level);
     Log(kInfo, "Log Level: %d\n", log_level);
   }
-
-  InitializeLAPICTimer();
 
   // create and load gdt
   SetupSegments();
