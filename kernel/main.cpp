@@ -50,10 +50,16 @@ BitmapMemoryManager* memory_manager;
 
 // mouse layer id defined here to be used in MouseObserver
 unsigned int mouse_layer_id;
+Vector2D<int> screen_size;
+Vector2D<int> mouse_position;
 
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   // move the mouse cursor window
-  layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
+  auto newpos = mouse_position + Vector2D<int>{displacement_x, displacement_y};
+  // limit mouse cursor move inside the screen area
+  mouse_position = ElementMax(ElementMin(newpos, screen_size + Vector2D<int>{-1, -1}), {0, 0});
+  layer_manager->Move(mouse_layer_id, mouse_position);
+
   // draw all the layers
   layer_manager->Draw();
 }
@@ -255,10 +261,10 @@ extern "C" void KernelMainNewStack(
   }
 
   // create new window for background (no draw yet)
-  const int kFrameWidth = frame_buffer_config.horizontal_resolution;
-  const int kFrameHeight = frame_buffer_config.vertical_resolution;
+  screen_size.x = frame_buffer_config.horizontal_resolution;
+  screen_size.y = frame_buffer_config.vertical_resolution;
 
-  auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight, frame_buffer_config.pixel_format);
+  auto bgwindow = std::make_shared<Window>(screen_size.x, screen_size.y, frame_buffer_config.pixel_format);
   auto bgwriter = bgwindow->Writer();
 
   // save background design data to bgwindow
@@ -271,6 +277,7 @@ extern "C" void KernelMainNewStack(
   mouse_window->SetTransparentColor(kMouseTransparentColor);
   // save mouse cursor desgin data to mouse_window
   DrawMouseCursor(mouse_window->Writer(), {0, 0});
+  mouse_position = {200, 200};
 
   FrameBuffer screen;
   if (auto err = screen.Initialize(frame_buffer_config)) {
@@ -290,7 +297,7 @@ extern "C" void KernelMainNewStack(
     .ID();
   mouse_layer_id = layer_manager->NewLayer()
     .SetWindow(mouse_window)
-    .Move({200, 200})
+    .Move(mouse_position)
     .ID();
 
   // set the drawing order of layers
