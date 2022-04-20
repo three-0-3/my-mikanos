@@ -41,7 +41,7 @@ class LayerManager {
 		void Draw() const;
 
 		// update the layer's position to specified absolute value (no draw again)
-		void Move(unsigned int id, Vector2D<int> new_position);
+		void Move(unsigned int id, Vector2D<int> new_pos);
 		// update the layer's position to specified relative value (no draw again)
 		void MoveRelative(unsigned int id, Vector2D<int> pos_diff);
 

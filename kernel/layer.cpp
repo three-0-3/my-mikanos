@@ -46,8 +46,8 @@ void LayerManager::Draw() const {
 	}
 }
 
-void LayerManager::Move(unsigned int id, Vector2D<int> new_position) {
-	FindLayer(id)->Move(new_position);
+void LayerManager::Move(unsigned int id, Vector2D<int> new_pos) {
+	FindLayer(id)->Move(new_pos);
 }
 
 void LayerManager::MoveRelative(unsigned int id, Vector2D<int> pos_diff) {

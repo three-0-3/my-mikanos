@@ -22,10 +22,10 @@ Window::Window(int width, int height, PixelFormat shadow_format) : width_{width}
 	}
 }
 
-void Window::DrawTo(FrameBuffer& dst, Vector2D<int> position) {
+void Window::DrawTo(FrameBuffer& dst, Vector2D<int> pos) {
 	// if transparent color is not set, just draw all the pixel
 	if (!transparent_color_) {
-		dst.Copy(position, shadow_buffer_);
+		dst.Copy(pos, shadow_buffer_);
 		return;
 	}
 
@@ -34,15 +34,15 @@ void Window::DrawTo(FrameBuffer& dst, Vector2D<int> position) {
 	auto& writer = dst.Writer();
 	// for (int y = 0; y < Height(); ++y) {
 	// 	for (int x = 0; x < Width(); ++x) {
-	for (int y = std::max(0, -position.y);
-			 y < std::min(Height(), writer.Height() - position.y);
+	for (int y = std::max(0, -pos.y);
+			 y < std::min(Height(), writer.Height() - pos.y);
 			 ++y) {
-		for (int x = std::max(0, -position.x);
-		    x < std::min(Width(), writer.Width() - position.x);
+		for (int x = std::max(0, -pos.x);
+		    x < std::min(Width(), writer.Width() - pos.x);
 				++x) {
 			const auto c = At(Vector2D<int>{x, y});
 			if (c != tc) {
-				writer.Write(position + Vector2D<int>{x, y}, c);
+				writer.Write(pos + Vector2D<int>{x, y}, c);
 			}
 		} 
 	}
