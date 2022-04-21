@@ -266,8 +266,6 @@ extern "C" void KernelMainNewStack(
 
   // save background design data to bgwindow
   DrawDesktop(*bgwriter);
-  // set background writer to console (hereafter, printk output will be saved to bgwindow)
-  console->SetWindow(bgwindow);
 
   // create new window for mouse cursor
   auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight, frame_buffer_config.pixel_format);
@@ -278,6 +276,10 @@ extern "C" void KernelMainNewStack(
 
   auto main_window = std::make_shared<Window>(160, 52, frame_buffer_config.pixel_format);
   DrawWindow(*main_window->Writer(), "Hellow Window");
+
+  auto console_window = std::make_shared<Window>(
+      Console::kColumns * 8, Console::kRows * 16, frame_buffer_config.pixel_format);
+  console->SetWindow(console_window);
 
   FrameBuffer screen;
   if (auto err = screen.Initialize(frame_buffer_config)) {
@@ -303,11 +305,16 @@ extern "C" void KernelMainNewStack(
     .SetWindow(main_window)
     .Move({300, 300})
     .ID();
+  console->SetLayerID(layer_manager->NewLayer()
+    .SetWindow(console_window)
+    .Move({0,0})
+    .ID());
 
   // set the drawing order of layers
   layer_manager->UpDown(bglayer_id, 0);
-  layer_manager->UpDown(mouse_layer_id, 1);
-  layer_manager->UpDown(main_window_layer_id, 1);
+  layer_manager->UpDown(console->LayerID(), 1);
+  layer_manager->UpDown(main_window_layer_id, 2);
+  layer_manager->UpDown(mouse_layer_id, 3);
   // draw all the layers
   layer_manager->Draw({{0, 0}, screen_size});
 
