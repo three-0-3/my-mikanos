@@ -32,7 +32,7 @@ class Window {
 		Window& operator=(const Window& rhs) = delete;
 
 		// write the data saved in window with position offset
-		void DrawTo(FrameBuffer& dst, Vector2D<int> pos);
+		void DrawTo(FrameBuffer& dst, Vector2D<int> pos, const Rectangle<int>& area);
 		// set the transparent color
 		void SetTransparentColor(std::optional<PixelColor> c);
 		// window writer associated with this window
@@ -48,6 +48,8 @@ class Window {
 		int Width() const;
 		// get height of the drawing area by pixel
 		int Height() const;
+		// get size of the drawing area by pixel
+		Vector2D<int> Size() const;
 
 		// Move rectangle in Window area
 		void Move(Vector2D<int> dst_pos, const Rectangle<int>& src);

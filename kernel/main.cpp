@@ -59,9 +59,6 @@ void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   // limit mouse cursor move inside the screen area
   mouse_position = ElementMax(ElementMin(newpos, screen_size + Vector2D<int>{-1, -1}), {0, 0});
   layer_manager->Move(mouse_layer_id, mouse_position);
-
-  // draw all the layers
-  layer_manager->Draw();
 }
 
 usb::xhci::Controller* xhc;
@@ -312,7 +309,7 @@ extern "C" void KernelMainNewStack(
   layer_manager->UpDown(mouse_layer_id, 1);
   layer_manager->UpDown(main_window_layer_id, 1);
   // draw all the layers
-  layer_manager->Draw();
+  layer_manager->Draw({{0, 0}, screen_size});
 
   // counter to show on the main window
   char str[128];
@@ -327,7 +324,7 @@ extern "C" void KernelMainNewStack(
     FillRectangle(*main_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
     // display the counter
     WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
-    layer_manager->Draw();
+    layer_manager->Draw(main_window_layer_id);
 
     // disable interrupt
     __asm__("cli");

@@ -22,10 +22,13 @@ Window::Window(int width, int height, PixelFormat shadow_format) : width_{width}
 	}
 }
 
-void Window::DrawTo(FrameBuffer& dst, Vector2D<int> pos) {
+void Window::DrawTo(FrameBuffer& dst, Vector2D<int> pos, const Rectangle<int>& area) {
 	// if transparent color is not set, just draw all the pixel
 	if (!transparent_color_) {
-		dst.Copy(pos, shadow_buffer_);
+		Rectangle<int> window_area{pos, Size()};
+		Rectangle<int> intersection = area & window_area;
+		// pass intersection to FrameBuffer as drawing area (convert pos based on the screen to pos based on the window)
+		dst.Copy(intersection.pos, shadow_buffer_, {intersection.pos - pos, intersection.size});
 		return;
 	}
 
@@ -71,6 +74,10 @@ int Window::Width() const {
 
 int Window::Height() const {
 	return height_;
+}
+
+Vector2D<int> Window::Size() const {
+	return {width_, height_};
 }
 
 void Window::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {

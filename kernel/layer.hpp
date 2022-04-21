@@ -15,6 +15,8 @@ class Layer {
 		Layer& SetWindow(const std::shared_ptr<Window>& window);
 		// get the window
 		std::shared_ptr<Window> GetWindow() const;
+		// get the layer's origin position
+		Vector2D<int> GetPosition() const;
 
 		// update the layer's position to specified absolute value (no draw again)
 		Layer& Move(Vector2D<int> pos);
@@ -22,7 +24,7 @@ class Layer {
 		Layer& MoveRelative(Vector2D<int> pos_diff);
 
 		// write the pixel in window data by writer
-		void DrawTo(FrameBuffer& screen) const;
+		void DrawTo(FrameBuffer& screen, const Rectangle<int>& area) const;
 
 	private:
 		unsigned int id_;
@@ -37,12 +39,14 @@ class LayerManager {
 		// create new layer and save in layer manager
 		Layer& NewLayer();
 
-		// draw the layers
-		void Draw() const;
+		// draw the layers (only specified area)
+		void Draw(const Rectangle<int>& area) const;
+		// draw the layers (only the layers specified and above)
+		void Draw(unsigned int id) const;
 
-		// update the layer's position to specified absolute value (no draw again)
+		// update the layer's position to specified absolute value (re-draw included)
 		void Move(unsigned int id, Vector2D<int> new_pos);
-		// update the layer's position to specified relative value (no draw again)
+		// update the layer's position to specified relative value (re-draw included)
 		void MoveRelative(unsigned int id, Vector2D<int> pos_diff);
 
 		// move the layer's drawing order to the specified new height
