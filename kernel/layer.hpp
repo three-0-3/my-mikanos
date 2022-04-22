@@ -17,6 +17,10 @@ class Layer {
 		std::shared_ptr<Window> GetWindow() const;
 		// get the layer's origin position
 		Vector2D<int> GetPosition() const;
+		// If true, this layer is draggable by mouse
+		Layer& SetDraggable(bool draggable);
+		// Return true if this layer is draggable
+		bool IsDraggable() const;
 
 		// update the layer's position to specified absolute value (no draw again)
 		Layer& Move(Vector2D<int> pos);
@@ -30,6 +34,7 @@ class Layer {
 		unsigned int id_;
 		Vector2D<int> pos_;
 		std::shared_ptr<Window> window_;
+		bool draggable_{false};
 };
 
 class LayerManager {
