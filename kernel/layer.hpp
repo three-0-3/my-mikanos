@@ -58,6 +58,8 @@ class LayerManager {
 
 	private:
 		FrameBuffer* screen_{nullptr};
+		// buffer of the screen size to prevent flickering
+		mutable FrameBuffer back_buffer_{};
 		// container to keep all the layers (including hidden layers)
 		std::vector<std::unique_ptr<Layer>> layers_{};
 		// container to keep the visible layers only
