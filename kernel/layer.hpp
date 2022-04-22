@@ -55,6 +55,8 @@ class LayerManager {
 		void UpDown(unsigned int id, int new_height);
 		// hide the layer
 		void Hide(unsigned int id);
+		// Find the layer on the top of the specified position
+		Layer* FindLayerByPosition(Vector2D<int> pos, unsigned int exclude_id);
 
 	private:
 		FrameBuffer* screen_{nullptr};
