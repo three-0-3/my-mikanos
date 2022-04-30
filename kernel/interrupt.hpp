@@ -3,6 +3,9 @@
 #include <array>
 #include <cstdint>
 
+#include "queue.hpp"
+#include "message.hpp"
+
 enum DescriptorType {
 	kInterruptGate = 14,
 };
@@ -64,3 +67,5 @@ struct InterruptFrame {
 
 // Notify End of Interrupt at the end of the interrupt handler
 void NotifyEndOfInterrupt();
+
+void InitializeInterrupt(ArrayQueue<Message>* msg_queue);

@@ -2,6 +2,8 @@
 #include <cstddef>
 #include <cstdio>
 
+#include <deque>
+
 #include "memory_map.hpp"
 #include "graphics.hpp"
 #include "font.hpp"
@@ -76,20 +78,6 @@ void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y
 
 usb::xhci::Controller* xhc;
 
-struct Message {
-  enum Type {
-    kInterruptXHCI,
-  } type;
-};
-
-ArrayQueue<Message>* main_queue;
-
-__attribute__((interrupt))
-void IntHandlerXHCI(InterruptFrame* frame) {
-  main_queue->Push(Message{Message::kInterruptXHCI});
-  NotifyEndOfInterrupt();
-}
-
 // Main stack (not created by UEFI)
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
@@ -112,10 +100,9 @@ extern "C" void KernelMainNewStack(
   InitializeSegmentation();
   InitializePaging();
   InitializeMemoryManager(memory_map);
-
   std::array<Message, 32> main_queue_data;
   ArrayQueue<Message> main_queue{main_queue_data};
-  ::main_queue = &main_queue;
+  InitializeInterrupt(&main_queue);
 
   // Run function to scan all the devices in PCI space and save it to the global variable
   auto err = pci::ScanAllBus();
@@ -151,12 +138,6 @@ extern "C" void KernelMainNewStack(
   } else {
     Log(kError, "xHC has not been found\n");
   }
-
-  // Set Interrupt Descriptor Table and load to CPU
-  const uint16_t cs = GetCS();
-  SetIDTEntry(idt[InterruptVector::kXHCI], MakeIDTAttr(DescriptorType::kInterruptGate, 0),
-              reinterpret_cast<uint64_t>(IntHandlerXHCI), cs);
-  LoadIDT(sizeof(idt) - 1, reinterpret_cast<uintptr_t>(&idt[0]));
 
 	// 0xfee00000 ~ 0xfee0400 (1024byte) in the memory space is the registers, not the actual memory
 	// 31:24 of 0xfee00020 is "local APIC ID" of the running CPU core
