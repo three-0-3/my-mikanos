@@ -28,16 +28,16 @@ void NotifyEndOfInterrupt() {
 }
 
 namespace {
-	ArrayQueue<Message>* msg_queue;
+	std::deque<Message>* msg_queue;
 
 	__attribute__((interrupt))
 	void IntHandlerXHCI(InterruptFrame* frame) {
-		msg_queue->Push(Message{Message::kInterruptXHCI});
+		msg_queue->push_back(Message{Message::kInterruptXHCI});
 		NotifyEndOfInterrupt();
 	}
 }
 
-void InitializeInterrupt(ArrayQueue<Message>* msg_queue) {
+void InitializeInterrupt(std::deque<Message>* msg_queue) {
 	::msg_queue = msg_queue;
 	
 	// Set Interrupt Descriptor Table and load to CPU

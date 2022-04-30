@@ -2,8 +2,8 @@
 
 #include <array>
 #include <cstdint>
+#include <deque>
 
-#include "queue.hpp"
 #include "message.hpp"
 
 enum DescriptorType {
@@ -68,4 +68,5 @@ struct InterruptFrame {
 // Notify End of Interrupt at the end of the interrupt handler
 void NotifyEndOfInterrupt();
 
-void InitializeInterrupt(ArrayQueue<Message>* msg_queue);
+// void InitializeInterrupt(ArrayQueue<Message>* msg_queue);
+void InitializeInterrupt(std::deque<Message>* msg_queue);

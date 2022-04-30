@@ -1,5 +1,7 @@
 #include <cstdio>
 
+#include <deque>
+
 #include "font.hpp"
 #include "console.hpp"
 #include "pci.hpp"
@@ -67,8 +69,7 @@ extern "C" void KernelMainNewStack(
   InitializeSegmentation();
   InitializePaging();
   InitializeMemoryManager(memory_map);
-  std::array<Message, 32> main_queue_data;
-  ArrayQueue<Message> main_queue{main_queue_data};
+  std::deque<Message> main_queue{32};
   InitializeInterrupt(&main_queue);
 
   InitializePCI();
@@ -98,15 +99,15 @@ extern "C" void KernelMainNewStack(
     // disable interrupt
     __asm__("cli");
     // if there is no message in the queue, enable interrupt and halt
-    if (main_queue.Count() == 0) {
+    if (main_queue.size() == 0) {
       __asm__("sti\n");
       continue;
     }
 
     // get one message
-    Message msg = main_queue.Front();
+    Message msg = main_queue.front();
     // delete one message
-    main_queue.Pop();
+    main_queue.pop_front();
     // enable interrupt
     __asm__("sti");
 
