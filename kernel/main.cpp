@@ -76,8 +76,6 @@ void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y
   previous_buttons = buttons;
 }
 
-usb::xhci::Controller* xhc;
-
 // Main stack (not created by UEFI)
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
@@ -104,94 +102,11 @@ extern "C" void KernelMainNewStack(
   ArrayQueue<Message> main_queue{main_queue_data};
   InitializeInterrupt(&main_queue);
 
-  // Run function to scan all the devices in PCI space and save it to the global variable
-  auto err = pci::ScanAllBus();
-  Log(kDebug, "ScanAllBus: %s\n", err.Name());
-
-  // Go through the devices list and print with vendor id & class code
-  for (int i = 0; i < pci::num_device; ++i) {
-    const auto& dev = pci::devices[i];
-    auto vendor_id = pci::ReadVendorId(dev.bus, dev.device, dev.function);
-    auto device_id = pci::ReadDeviceId(dev.bus, dev.device, dev.function);
-    auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
-    Log(kDebug, "%d.%d.%d: vend %04x, device, %04x, class %08x, head %02x\n",
-            dev.bus, dev.device, dev.function,
-            vendor_id, device_id, class_code, dev.header_type);
-  }
-
-  // search for xHC (priority: intel)
-  pci::Device* xhc_dev = nullptr;
-  for (int i = 0; i < pci::num_device; ++i) {
-    if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x30u)) {
-      xhc_dev = &pci::devices[i];
-
-      // exit loop when the intel xHC is found
-      if (0x8086 == pci::ReadVendorId(*xhc_dev)) {
-        break;
-      }
-    }
-  }
-
-  if (xhc_dev) {
-    Log(kInfo, "xHC has been found: %d.%d.%d\n",
-        xhc_dev->bus, xhc_dev->device, xhc_dev->function);
-  } else {
-    Log(kError, "xHC has not been found\n");
-  }
-
-	// 0xfee00000 ~ 0xfee0400 (1024byte) in the memory space is the registers, not the actual memory
-	// 31:24 of 0xfee00020 is "local APIC ID" of the running CPU core
-  const uint8_t bsp_local_apic_id = *reinterpret_cast<const uint32_t*>(0xfee00020) >> 24;
-  pci::ConfigureMSIFixedDestination(
-    *xhc_dev,
-    bsp_local_apic_id,
-    pci::MSITriggerMode::kLevel,
-    pci::MSIDeliveryMode::kFixed,
-    InterruptVector::kXHCI,
-    0
-  );
-
-  // read BAR0 of xHC PIC config space 
-  const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
-  Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
-  // get MMIO base address
-  const uint64_t xhc_mmio_base = xhc_bar.value & ~static_cast<uint64_t>(0xf);
-  Log(kDebug, "xHC mmio_base = %08lx\n", xhc_mmio_base);
-
-  // declare xhc
-  usb::xhci::Controller xhc{xhc_mmio_base};
-
-  {
-    // initialize xhc
-    auto err = xhc.Initialize();
-    Log(kDebug, "xhc.Initialize: %s\n", err.Name());
-  }
-
-  Log(kInfo, "xHC starting\n");
-  xhc.Run();
-
-  // substitute block scope xhc to file scope xhc
-  ::xhc = &xhc;
-  // sti instruction set the system flag "Interrupt Flag"
-  // to be ready for maskable hardware interrupts
-  __asm__("sti");
+  InitializePCI();
+  usb::xhci::Initialize();
 
   // set mouse callback method
   usb::HIDMouseDriver::default_observer = MouseObserver;
-
-  // configure port (necessary for QEMU)
-  for (int i = 1; i <= xhc.MaxPorts(); ++i) {
-    auto port = xhc.PortAt(i);
-    Log(kDebug, "Port %d: IsConnected=%d\n", i, port.IsConnected());
-
-    if (port.IsConnected()) {
-      if (auto err = ConfigurePort(xhc, port)) {
-        Log(kError, "failed to configure port: %s at %s:%d\n",
-            err.Name(), err.File(), err.Line());
-        continue;
-      }
-    }
-  }
 
   // create new window for background (no draw yet)
   screen_size.x = screen_config.horizontal_resolution;
@@ -287,12 +202,7 @@ extern "C" void KernelMainNewStack(
 
     switch (msg.type) {
     case Message::kInterruptXHCI:
-      while (xhc.PrimaryEventRing()->HasFront()) {
-        if (auto err = ProcessEvent(xhc)) {
-          Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
-              err.Name(), err.File(), err.Line());
-        }
-      }
+      usb::xhci::ProcessEvents();
       break;
     default:
       Log(kError, "Unknown message type: %d\n", msg.type);

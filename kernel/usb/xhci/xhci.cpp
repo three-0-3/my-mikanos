@@ -1,6 +1,8 @@
 #include "usb/xhci/xhci.hpp"
 
 #include "logger.hpp"
+#include "pci.hpp"
+#include "interrupt.hpp"
 #include "usb/setupdata.hpp"
 #include "usb/device.hpp"
 #include "usb/descriptor.hpp"
@@ -502,5 +504,82 @@ namespace usb::xhci {
     xhc.PrimaryEventRing()->Pop();
 
     return err;
+  }
+
+  Controller* controller;
+
+  void Initialize() {
+    // search for xHC (priority: intel)
+    pci::Device* xhc_dev = nullptr;
+    for (int i = 0; i < pci::num_device; ++i) {
+      if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x30u)) {
+        xhc_dev = &pci::devices[i];
+
+        // exit loop when the intel xHC is found
+        if (0x8086 == pci::ReadVendorId(*xhc_dev)) {
+          break;
+        }
+      }
+    }
+
+    if (xhc_dev) {
+      Log(kInfo, "xHC has been found: %d.%d.%d\n",
+          xhc_dev->bus, xhc_dev->device, xhc_dev->function);
+    } else {
+      Log(kError, "xHC has not been found\n");
+    }
+
+    // 0xfee00000 ~ 0xfee0400 (1024byte) in the memory space is the registers, not the actual memory
+    // 31:24 of 0xfee00020 is "local APIC ID" of the running CPU core
+    const uint8_t bsp_local_apic_id = *reinterpret_cast<const uint32_t*>(0xfee00020) >> 24;
+    pci::ConfigureMSIFixedDestination(
+      *xhc_dev,
+      bsp_local_apic_id,
+      pci::MSITriggerMode::kLevel,
+      pci::MSIDeliveryMode::kFixed,
+      InterruptVector::kXHCI,
+      0
+    );
+
+    // read BAR0 of xHC PIC config space 
+    const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
+    Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
+    // get MMIO base address
+    const uint64_t xhc_mmio_base = xhc_bar.value & ~static_cast<uint64_t>(0xf);
+    Log(kDebug, "xHC mmio_base = %08lx\n", xhc_mmio_base);
+
+    controller = new Controller{xhc_mmio_base};
+
+    if (auto err = controller->Initialize()) {
+      // initialize xhc
+      Log(kDebug, "xhc.Initialize: %s\n", err.Name());
+      exit(1);
+    }
+
+    Log(kInfo, "xHC starting\n");
+    controller->Run();
+
+    // configure port (necessary for QEMU)
+    for (int i = 1; i <= controller->MaxPorts(); ++i) {
+      auto port = controller->PortAt(i);
+      Log(kDebug, "Port %d: IsConnected=%d\n", i, port.IsConnected());
+
+      if (port.IsConnected()) {
+        if (auto err = ConfigurePort(*controller, port)) {
+          Log(kError, "failed to configure port: %s at %s:%d\n",
+              err.Name(), err.File(), err.Line());
+          continue;
+        }
+      }
+    }
+  }
+
+  void ProcessEvents() {
+    while (controller->PrimaryEventRing()->HasFront()) {
+      if (auto err = ProcessEvent(*controller)) {
+        Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
+            err.Name(), err.File(), err.Line());
+      }
+    }
   }
 }

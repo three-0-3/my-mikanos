@@ -1,5 +1,6 @@
 #include "pci.hpp"
 #include "asmfunc.h"
+#include "logger.hpp"
 
 namespace pci {
 	// make 32 bit integer for CONFIG_ADDRESS register
@@ -309,4 +310,23 @@ namespace pci {
 		}
 		return ConfigureMSI(dev, msg_addr, msg_data, num_vector_exponent);
 	}
+}
+
+void InitializePCI() {
+	// Run function to scan all the devices in PCI space and save it to the global variable
+  if (auto err = pci::ScanAllBus()) {
+	  Log(kDebug, "ScanAllBus: %s\n", err.Name());
+		exit(1);
+	}
+
+  // Go through the devices list and print with vendor id & class code
+  for (int i = 0; i < pci::num_device; ++i) {
+    const auto& dev = pci::devices[i];
+    auto vendor_id = pci::ReadVendorId(dev.bus, dev.device, dev.function);
+    auto device_id = pci::ReadDeviceId(dev.bus, dev.device, dev.function);
+    auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
+    Log(kDebug, "%d.%d.%d: vend %04x, device, %04x, class %08x, head %02x\n",
+            dev.bus, dev.device, dev.function,
+            vendor_id, device_id, class_code, dev.header_type);
+  }
 }

@@ -64,4 +64,7 @@ namespace usb::xhci {
    * @return イベントを正常に処理できたら Error::kSuccess
    */
   Error ProcessEvent(Controller& xhc);
+
+  void Initialize();
+  void ProcessEvents();
 }
