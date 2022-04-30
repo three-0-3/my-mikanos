@@ -96,7 +96,7 @@ void InitializeMouse() {
     .SetWindow(mouse_window)
     .Move(mouse_position)
     .ID();
-  layer_manager->UpDown(mouse_layer_id, 3);
+  layer_manager->UpDown(mouse_layer_id, std::numeric_limits<int>::max());
 
 	// set mouse callback method
   usb::HIDMouseDriver::default_observer = MouseObserver;

@@ -50,7 +50,7 @@ void InitializeMainWindow() {
     .Move({300, 300})
     .ID();
 
-  layer_manager->UpDown(main_window_layer_id, 2);
+  layer_manager->UpDown(main_window_layer_id, std::numeric_limits<int>::max());
 
 }
 
