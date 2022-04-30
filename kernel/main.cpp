@@ -1,11 +1,5 @@
-#include <cstdint>
-#include <cstddef>
 #include <cstdio>
 
-#include <deque>
-
-#include "memory_map.hpp"
-#include "graphics.hpp"
 #include "font.hpp"
 #include "console.hpp"
 #include "pci.hpp"
@@ -13,13 +7,10 @@
 #include "mouse.hpp"
 #include "usb/xhci/xhci.hpp"
 #include "interrupt.hpp"
-#include "asmfunc.h"
-#include "queue.hpp"
 #include "segment.hpp"
 #include "paging.hpp"
 #include "memory_manager.hpp"
 #include "layer.hpp"
-#include "window.hpp"
 
 void operator delete(void* obj) noexcept {
 }
