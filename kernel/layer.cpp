@@ -1,5 +1,8 @@
 #include "layer.hpp"
 
+#include "console.hpp"
+#include "logger.hpp"
+
 Layer::Layer(unsigned int id) : id_{id} {}
 
 unsigned int Layer::ID() const {
@@ -186,3 +189,42 @@ Layer* LayerManager::FindLayer(unsigned int id) {
 }
 
 LayerManager* layer_manager;
+
+void InitializeLayer() {
+	const auto screen_size = ScreenSize();
+
+	auto bgwindow = std::make_shared<Window>(screen_size.x, screen_size.y, screen_config.pixel_format);
+  auto bgwriter = bgwindow->Writer();
+
+  // save background design data to bgwindow
+  DrawDesktop(*bgwriter);
+
+  auto console_window = std::make_shared<Window>(
+      Console::kColumns * 8, Console::kRows * 16, screen_config.pixel_format);
+  console->SetWindow(console_window);
+
+  FrameBuffer* screen = new FrameBuffer;
+  if (auto err = screen->Initialize(screen_config)) {
+    Log(kError, "failed to initialize frame buffer: %s at %s:%d\n",
+        err.Name(), err.File(), err.Line());
+  }
+
+  // create layer manager to control all the layers/windows
+  layer_manager = new LayerManager;
+  // set pixel writer (not window writer) to layer manager
+  layer_manager->SetWriter(screen);
+
+
+  // add new layer for background window
+  auto bglayer_id = layer_manager->NewLayer()
+    .SetWindow(bgwindow)
+    .Move({0, 0})
+    .ID();
+  console->SetLayerID(layer_manager->NewLayer()
+    .SetWindow(console_window)
+    .Move({0,0})
+    .ID());
+
+  layer_manager->UpDown(bglayer_id, 0);
+  layer_manager->UpDown(console->LayerID(), 1);
+}

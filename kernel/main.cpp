@@ -12,7 +12,6 @@
 #include "logger.hpp"
 #include "mouse.hpp"
 #include "usb/xhci/xhci.hpp"
-#include "usb/classdriver/mouse.hpp"
 #include "interrupt.hpp"
 #include "asmfunc.h"
 #include "queue.hpp"
@@ -39,41 +38,20 @@ int printk(const char* format, ...) {
   return result;
 }
 
-// mouse layer id defined here to be used in MouseObserver
-unsigned int mouse_layer_id;
-Vector2D<int> screen_size;
-Vector2D<int> mouse_position;
+std::shared_ptr<Window> main_window;
+unsigned int main_window_layer_id;
+void InitializeMainWindow() {
+  main_window = std::make_shared<Window>(160, 52, screen_config.pixel_format);
+  DrawWindow(*main_window->Writer(), "Hellow Window");
 
-void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y) {
-  static unsigned int mouse_drag_layer_id = 0;
-  static uint8_t previous_buttons = 0;
+  main_window_layer_id = layer_manager->NewLayer()
+    .SetWindow(main_window)
+    .SetDraggable(true)
+    .Move({300, 300})
+    .ID();
 
-  const auto oldpos = mouse_position;
-  // move the mouse cursor window
-  auto newpos = mouse_position + Vector2D<int>{displacement_x, displacement_y};
-  // limit mouse cursor move inside the screen area
-  mouse_position = ElementMax(ElementMin(newpos, screen_size + Vector2D<int>{-1, -1}), {0, 0});
+  layer_manager->UpDown(main_window_layer_id, 2);
 
-  const auto posdiff = mouse_position - oldpos;
-
-  layer_manager->Move(mouse_layer_id, mouse_position);
-
-  const bool previous_left_pressed = (previous_buttons & 0x01);
-  const bool left_pressed = (buttons & 0x01);
-  if (!previous_left_pressed && left_pressed) {
-    auto layer = layer_manager->FindLayerByPosition(mouse_position, mouse_layer_id);
-    if (layer && layer->IsDraggable()) {
-      mouse_drag_layer_id = layer->ID();
-    }
-  } else if (previous_left_pressed && left_pressed) {
-    if (mouse_drag_layer_id > 0) {
-      layer_manager->MoveRelative(mouse_drag_layer_id, posdiff);
-    }
-  } else if (previous_left_pressed && !left_pressed) {
-    mouse_drag_layer_id = 0;
-  }
-
-  previous_buttons = buttons;
 }
 
 // Main stack (not created by UEFI)
@@ -105,75 +83,16 @@ extern "C" void KernelMainNewStack(
   InitializePCI();
   usb::xhci::Initialize();
 
-  // set mouse callback method
-  usb::HIDMouseDriver::default_observer = MouseObserver;
+  InitializeLayer();
+  InitializeMainWindow();
+  InitializeMouse();
 
-  // create new window for background (no draw yet)
-  screen_size.x = screen_config.horizontal_resolution;
-  screen_size.y = screen_config.vertical_resolution;
-
-  auto bgwindow = std::make_shared<Window>(screen_size.x, screen_size.y, screen_config.pixel_format);
-  auto bgwriter = bgwindow->Writer();
-
-  // save background design data to bgwindow
-  DrawDesktop(*bgwriter);
-
-  // create new window for mouse cursor
-  auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight, screen_config.pixel_format);
-  mouse_window->SetTransparentColor(kMouseTransparentColor);
-  // save mouse cursor desgin data to mouse_window
-  DrawMouseCursor(mouse_window->Writer(), {0, 0});
-  mouse_position = {200, 200};
-
-  auto main_window = std::make_shared<Window>(160, 52, screen_config.pixel_format);
-  DrawWindow(*main_window->Writer(), "Hellow Window");
-
-  auto console_window = std::make_shared<Window>(
-      Console::kColumns * 8, Console::kRows * 16, screen_config.pixel_format);
-  console->SetWindow(console_window);
-
-  FrameBuffer screen;
-  if (auto err = screen.Initialize(screen_config)) {
-    Log(kError, "failed to initialize frame buffer: %s at %s:%d\n",
-        err.Name(), err.File(), err.Line());
-  }
-
-  // create layer manager to control all the layers/windows
-  layer_manager = new LayerManager;
-  // set pixel writer (not window writer) to layer manager
-  layer_manager->SetWriter(&screen);
-
-  // add new layer for background window
-  auto bglayer_id = layer_manager->NewLayer()
-    .SetWindow(bgwindow)
-    .Move({0, 0})
-    .ID();
-  mouse_layer_id = layer_manager->NewLayer()
-    .SetWindow(mouse_window)
-    .Move(mouse_position)
-    .ID();
-  auto main_window_layer_id = layer_manager->NewLayer()
-    .SetWindow(main_window)
-    .SetDraggable(true)
-    .Move({300, 300})
-    .ID();
-  console->SetLayerID(layer_manager->NewLayer()
-    .SetWindow(console_window)
-    .Move({0,0})
-    .ID());
-
-  // set the drawing order of layers
-  layer_manager->UpDown(bglayer_id, 0);
-  layer_manager->UpDown(console->LayerID(), 1);
-  layer_manager->UpDown(main_window_layer_id, 2);
-  layer_manager->UpDown(mouse_layer_id, 3);
   // draw all the layers
-  layer_manager->Draw({{0, 0}, screen_size});
+  layer_manager->Draw({{0, 0}, ScreenSize()});
 
   // counter to show on the main window
   char str[128];
   unsigned int count = 0;
-
 
   while (true) {
     // counter to show on the main window
