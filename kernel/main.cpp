@@ -23,14 +23,6 @@
 void operator delete(void* obj) noexcept {
 }
 
-// writer
-char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
-PixelWriter* pixel_writer;
-
-// console
-char console_buf[sizeof(Console)];
-Console* console;
-
 // print string (to delete?)
 int printk(const char* format, ...) {
   va_list ap;
@@ -108,22 +100,11 @@ extern "C" void KernelMainNewStack(
     const FrameBufferConfig& frame_buffer_config_ref,
     const MemoryMap& memory_map_ref) {
   // copy the data from UEFI to the local variables (not to be overwritten)
-  FrameBufferConfig frame_buffer_config{frame_buffer_config_ref};
   MemoryMap memory_map{memory_map_ref};
 
-  // set pixel writer according to the frame buffer config
-  switch (frame_buffer_config.pixel_format) {
-    case kPixelRGBResv8BitPerColor:
-      pixel_writer = new(pixel_writer_buf) RGBResv8BitPerColorPixelWriter(frame_buffer_config);
-      break;
-    case kPixelBGRResv8BitPerColor:
-      pixel_writer = new(pixel_writer_buf) BGRResv8BitPerColorPixelWriter{frame_buffer_config};
-      break;
-  }
+  InitializeGraphics(frame_buffer_config_ref);
+  InitializeConsole();
 
-  // Write welcome message in the console
-  console = new(console_buf) Console{kDesktopFGColor, kDesktopBGColor};
-  console->SetWriter(pixel_writer);
   printk("Welcome to MikanOS!!\n");
   {
     LogLevel log_level = kWarn;
@@ -131,18 +112,8 @@ extern "C" void KernelMainNewStack(
     Log(kInfo, "Log Level: %d\n", log_level);
   }
 
-  // create and load gdt
-  SetupSegments();
-  // set segment registers
-  const uint16_t kernel_cs = 1 << 3;
-  const uint16_t kernel_ss = 2 << 3;
-  // set null descriptor for unused registers
-  SetDSAll(0);
-  // set code and data segment descriptor to CS/SS registers
-  SetCSSS(kernel_cs, kernel_ss);
-
-  // create and set page table (hierarchical paging structure)
-  SetupIdentityPageTable();
+  InitializeSegmentation();
+  InitializePaging();
 
   ::memory_manager = new(memory_manager_buf) BitmapMemoryManager;
 
@@ -282,31 +253,31 @@ extern "C" void KernelMainNewStack(
   }
 
   // create new window for background (no draw yet)
-  screen_size.x = frame_buffer_config.horizontal_resolution;
-  screen_size.y = frame_buffer_config.vertical_resolution;
+  screen_size.x = screen_config.horizontal_resolution;
+  screen_size.y = screen_config.vertical_resolution;
 
-  auto bgwindow = std::make_shared<Window>(screen_size.x, screen_size.y, frame_buffer_config.pixel_format);
+  auto bgwindow = std::make_shared<Window>(screen_size.x, screen_size.y, screen_config.pixel_format);
   auto bgwriter = bgwindow->Writer();
 
   // save background design data to bgwindow
   DrawDesktop(*bgwriter);
 
   // create new window for mouse cursor
-  auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight, frame_buffer_config.pixel_format);
+  auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight, screen_config.pixel_format);
   mouse_window->SetTransparentColor(kMouseTransparentColor);
   // save mouse cursor desgin data to mouse_window
   DrawMouseCursor(mouse_window->Writer(), {0, 0});
   mouse_position = {200, 200};
 
-  auto main_window = std::make_shared<Window>(160, 52, frame_buffer_config.pixel_format);
+  auto main_window = std::make_shared<Window>(160, 52, screen_config.pixel_format);
   DrawWindow(*main_window->Writer(), "Hellow Window");
 
   auto console_window = std::make_shared<Window>(
-      Console::kColumns * 8, Console::kRows * 16, frame_buffer_config.pixel_format);
+      Console::kColumns * 8, Console::kRows * 16, screen_config.pixel_format);
   console->SetWindow(console_window);
 
   FrameBuffer screen;
-  if (auto err = screen.Initialize(frame_buffer_config)) {
+  if (auto err = screen.Initialize(screen_config)) {
     Log(kError, "failed to initialize frame buffer: %s at %s:%d\n",
         err.Name(), err.File(), err.Line());
   }

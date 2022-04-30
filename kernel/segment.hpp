@@ -34,4 +34,11 @@ void SetDataSegment(SegmentDescriptor& desc,
 										SegmentDescriptorType type,
 										unsigned int descriptor_privilege_level);
 
+// set segment registers
+const uint16_t kKernelCS = 1 << 3;
+const uint16_t kKernelSS = 2 << 3;
+const uint16_t kKernelDS = 0;
+
+// create and load gdt
 void SetupSegments();
+void InitializeSegmentation();

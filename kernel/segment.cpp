@@ -48,3 +48,12 @@ void SetupSegments() {
 	SetDataSegment(gdt[2], SegmentDescriptorType::kReadWrite, 0);
 	LoadGDT(sizeof(gdt) - 1, reinterpret_cast<uintptr_t>(&gdt[0]));
 }
+
+void InitializeSegmentation() {
+	SetupSegments();
+
+  // set null descriptor for unused registers
+	SetDSAll(kKernelDS);
+  // set code and data segment descriptor to CS/SS registers
+	SetCSSS(kKernelCS, kKernelSS);
+}
