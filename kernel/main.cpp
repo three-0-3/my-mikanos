@@ -13,6 +13,7 @@
 #include "paging.hpp"
 #include "memory_manager.hpp"
 #include "layer.hpp"
+#include "timer.hpp"
 
 void operator delete(void* obj) noexcept {
 }
@@ -82,6 +83,8 @@ extern "C" void KernelMainNewStack(
   // draw all the layers
   layer_manager->Draw({{0, 0}, ScreenSize()});
 
+  InitializeLAPICTimer();
+
   // counter to show on the main window
   char str[128];
   unsigned int count = 0;
@@ -114,6 +117,9 @@ extern "C" void KernelMainNewStack(
     switch (msg.type) {
     case Message::kInterruptXHCI:
       usb::xhci::ProcessEvents();
+      break;
+    case Message::kInterruptLAPICTimer:
+      printk("Timer interrupt\n");
       break;
     default:
       Log(kError, "Unknown message type: %d\n", msg.type);

@@ -54,6 +54,7 @@ void SetIDTEntry(InterruptDescriptor& desc,
 
 enum InterruptVector {
 	kXHCI = 0x40,
+	kLAPICTimer = 0x41,
 };
 
 // interrupt handler receives the following data when it's called

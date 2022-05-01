@@ -1,6 +1,7 @@
 #include "timer.hpp"
 
 #include "logger.hpp"
+#include "interrupt.hpp"
 
 namespace {
 	const uint32_t kCountMax = 0xffffffffu;
@@ -12,7 +13,8 @@ namespace {
 
 void InitializeLAPICTimer() {
 	divide_config = 0b1011; // 3,1,0 bits : divide configuration, 111 means no division (1:1)
-	lvt_timer = (0b001 << 16) | 32; // one-shot, masked, 
+	lvt_timer = (0b010 << 16) | InterruptVector::kLAPICTimer; // periodic, interrupt enabled 
+	initial_count = kCountMax; // start timer at the initialization	
 }
 
 void StartLAPICTimer() {
