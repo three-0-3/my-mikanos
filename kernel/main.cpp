@@ -87,12 +87,14 @@ extern "C" void KernelMainNewStack(
 
   // counter to show on the main window
   char str[128];
-  unsigned int count = 0;
 
   while (true) {
+    __asm__("cli");
+    const auto tick = timer_manager->CurrentTick();
+    __asm__("sti");
+
     // counter to show on the main window
-    ++count;
-    sprintf(str, "%010u", count);
+    sprintf(str, "%010lu", tick);
     // cleanup the previous number
     FillRectangle(*main_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
     // display the counter
@@ -103,7 +105,7 @@ extern "C" void KernelMainNewStack(
     __asm__("cli");
     // if there is no message in the queue, enable interrupt and halt
     if (main_queue.size() == 0) {
-      __asm__("sti\n");
+      __asm__("sti\n\thlt");
       continue;
     }
 
