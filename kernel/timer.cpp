@@ -1,5 +1,6 @@
 #include "timer.hpp"
 
+#include "acpi.hpp"
 #include "logger.hpp"
 #include "interrupt.hpp"
 
@@ -14,9 +15,20 @@ namespace {
 void InitializeLAPICTimer(std::deque<Message>& msg_queue) {
 	timer_manager = new TimerManager{msg_queue};
 
+	// measure lapic timer frequency
+	divide_config = 0b1011; // no division (1:1)
+	lvt_timer = 0b001 << 16; // one-shot, interrupt disabled
+	
+	StartLAPICTimer();
+	acpi::WaitMilliseconds(100);
+	const auto elapsed = LAPICTimerElapsed();
+	StopLAPICTimer();
+
+	lapic_timer_freq = static_cast<unsigned long>(elapsed) * 10;
+
 	divide_config = 0b1011; // 3,1,0 bits : divide configuration, 111 means no division (1:1)
 	lvt_timer = (0b010 << 16) | InterruptVector::kLAPICTimer; // periodic, interrupt enabled 
-	initial_count = 0x1000000; // start timer at the initialization	
+	initial_count = lapic_timer_freq / kTimerFreq; // start timer at the initialization	
 }
 
 void StartLAPICTimer() {
@@ -60,6 +72,7 @@ void TimerManager::Tick() {
 }
 
 TimerManager* timer_manager;
+unsigned long lapic_timer_freq;
 
 void LAPICTimerOnInterrupt() {
 	timer_manager->Tick();
