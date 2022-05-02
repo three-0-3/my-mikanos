@@ -18,6 +18,7 @@
 
 [Guids]
 　gEfiFileInfoGuid
+  gEfiAcpiTableGuid
 
 [Protocols]
   gEfiLoadedImageProtocolGuid

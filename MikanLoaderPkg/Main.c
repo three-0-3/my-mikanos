@@ -361,16 +361,25 @@ EFI_STATUS EFIAPI UefiMain(
       Halt();
   }
 
+  VOID* acpi_table = NULL;
+  for (UINTN i = 0; i < system_table->NumberOfTableEntries; ++i) {
+    if (CompareGuid(&gEfiAcpiTableGuid, &system_table->ConfigurationTable[i].VendorGuid)) {
+      acpi_table = system_table->ConfigurationTable[i].VendorTable;
+      break;
+    }
+  }
+
   // Define new function type
   typedef void EntryPointType(const struct FrameBufferConfig*,
-                              const struct MemoryMap*);
+                              const struct MemoryMap*,
+                              const VOID*);
 
   // Set entry point address as the pointer for the function
   UINT64 entry_addr = *(UINT64*)(kernel_first_addr + 24);
   EntryPointType* entry_point = (EntryPointType*)entry_addr;
  
   // Execute function and go to kernel
-  entry_point(&config, &memmap);
+  entry_point(&config, &memmap, acpi_table);
 
   Print(L"All done\n");
 

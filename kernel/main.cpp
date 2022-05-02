@@ -14,6 +14,7 @@
 #include "memory_manager.hpp"
 #include "layer.hpp"
 #include "timer.hpp"
+#include "acpi.hpp"
 
 void operator delete(void* obj) noexcept {
 }
@@ -53,7 +54,8 @@ alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
 extern "C" void KernelMainNewStack(
     const FrameBufferConfig& frame_buffer_config_ref,
-    const MemoryMap& memory_map_ref) {
+    const MemoryMap& memory_map_ref,
+    const acpi::RSDP& acpi_table) {
   // copy the data from UEFI to the local variables (not to be overwritten)
   MemoryMap memory_map{memory_map_ref};
 
@@ -83,6 +85,7 @@ extern "C" void KernelMainNewStack(
   // draw all the layers
   layer_manager->Draw({{0, 0}, ScreenSize()});
 
+  acpi::Initialize(acpi_table); // validate RSDP
   InitializeLAPICTimer(main_queue);
 
   timer_manager->AddTimer(Timer(200, 1));
