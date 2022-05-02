@@ -15,6 +15,7 @@
 #include "layer.hpp"
 #include "timer.hpp"
 #include "acpi.hpp"
+#include "keyboard.hpp"
 
 void operator delete(void* obj) noexcept {
 }
@@ -88,6 +89,8 @@ extern "C" void KernelMainNewStack(
   acpi::Initialize(acpi_table); // validate RSDP
   InitializeLAPICTimer(main_queue);
 
+  InitializeKeyboard(main_queue);
+
   // counter to show on the main window
   char str[128];
 
@@ -124,6 +127,12 @@ extern "C" void KernelMainNewStack(
       usb::xhci::ProcessEvents();
       break;
     case Message::kTimerTimeout:
+      break;
+    case Message::kKeyPush:
+      if (msg.arg.keyboard.ascii != 0) {
+        // printk("%d %d %c\n",msg.arg.keyboard.keycode, msg.arg.keyboard.ascii, msg.arg.keyboard.ascii);
+        printk("%c", msg.arg.keyboard.ascii);
+      }
       break;
     default:
       Log(kError, "Unknown message type: %d\n", msg.type);
