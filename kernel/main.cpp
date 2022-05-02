@@ -83,7 +83,11 @@ extern "C" void KernelMainNewStack(
   // draw all the layers
   layer_manager->Draw({{0, 0}, ScreenSize()});
 
-  InitializeLAPICTimer();
+  InitializeLAPICTimer(main_queue);
+
+  timer_manager->AddTimer(Timer(200, 1));
+  timer_manager->AddTimer(Timer(600, 2));
+  timer_manager->AddTimer(Timer(720, 3));
 
   // counter to show on the main window
   char str[128];
@@ -120,8 +124,8 @@ extern "C" void KernelMainNewStack(
     case Message::kInterruptXHCI:
       usb::xhci::ProcessEvents();
       break;
-    case Message::kInterruptLAPICTimer:
-      printk("Timer interrupt\n");
+    case Message::kTimerTimeout:
+      printk("Timer: timeout = %lu, value = %d\n", msg.arg.timer.timeout, msg.arg.timer.value);
       break;
     default:
       Log(kError, "Unknown message type: %d\n", msg.type);
