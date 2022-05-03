@@ -50,6 +50,45 @@ void InitializeMainWindow() {
 
 }
 
+std::shared_ptr<Window> text_window;
+unsigned int text_window_layer_id;
+void InitializeTextWindow() {
+  const int win_w = 160;
+  const int win_h = 52;
+
+  text_window = std::make_shared<Window>(win_w, win_h, screen_config.pixel_format);
+  DrawWindow(*text_window->Writer(), "Text Box Test");
+  DrawTextbox(*text_window->Writer(), {4, 24}, {win_w - 8, win_h - 24 - 4});
+
+  text_window_layer_id = layer_manager->NewLayer()
+    .SetWindow(text_window)
+    .SetDraggable(true)
+    .Move({350, 200})
+    .ID();
+
+  layer_manager->UpDown(text_window_layer_id, std::numeric_limits<int>::max());
+}
+
+int text_window_index;
+void InputTextWindow(char c) {
+  if (c == 0) {
+    return;
+  }
+
+  auto pos = []() { return Vector2D<int>{8 + 8 * text_window_index, 24 + 6}; };
+
+  const int max_chars = (text_window->Width() - 16) / 8;
+  if (c == '\b' && text_window_index > 0) {
+    --text_window_index;
+    FillRectangle(*text_window->Writer(), pos(), {8, 16}, ToColor(0xffffff));
+  } else if (c >= ' ' && text_window_index < max_chars) {
+    WriteAscii(*text_window->Writer(), pos(), c, ToColor(0));
+    ++text_window_index;
+  }
+
+  layer_manager->Draw(text_window_layer_id);
+}
+
 // Main stack (not created by UEFI)
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
@@ -81,6 +120,7 @@ extern "C" void KernelMainNewStack(
 
   InitializeLayer();
   InitializeMainWindow();
+  InitializeTextWindow();
   InitializeMouse();
 
   // draw all the layers
@@ -129,10 +169,7 @@ extern "C" void KernelMainNewStack(
     case Message::kTimerTimeout:
       break;
     case Message::kKeyPush:
-      if (msg.arg.keyboard.ascii != 0) {
-        // printk("%d %d %c\n",msg.arg.keyboard.keycode, msg.arg.keyboard.ascii, msg.arg.keyboard.ascii);
-        printk("%c", msg.arg.keyboard.ascii);
-      }
+      InputTextWindow(msg.arg.keyboard.ascii);
       break;
     default:
       Log(kError, "Unknown message type: %d\n", msg.type);
