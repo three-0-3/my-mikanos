@@ -11,4 +11,6 @@ extern "C" {
 	void SetDSAll(uint16_t value);
 	void SetCSSS(uint16_t cs, uint16_t ss);
 	void SetCR3(uint64_t value);
+	uint64_t GetCR3();
+	void SwitchContext(void* next_ctx, void* current_ctx);
 }
