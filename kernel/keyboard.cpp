@@ -18,32 +18,32 @@ namespace {
 		'\n', '1',  '2',  '3',  '4',  '5',  '6',  '7', // 88
 		'8',  '9',  '0',  '.', '\\',  0,    0,    '=', // 96
 	};
+
+	const char keycode_map_shifted[256] = {
+		0,    0,    0,    0,    'A',  'B',  'C',  'D', // 0
+		'E',  'F',  'G',  'H',  'I',  'J',  'K',  'L', // 8
+		'M',  'N',  'O',  'P',  'Q',  'R',  'S',  'T', // 16
+		'U',  'V',  'W',  'X',  'Y',  'Z',  '!',  '@', // 24
+		'#',  '$',  '%',  '^',  '&',  '*',  '(',  ')', // 32
+		'\n', '\b', 0x08, '\t', ' ',  '_',  '+',  '{', // 40
+		'}',  '|',  '~',  ':',  '"',  '~',  '<',  '>', // 48
+		'?',  0,    0,    0,    0,    0,    0,    0,   // 56
+		0,    0,    0,    0,    0,    0,    0,    0,   // 64
+		0,    0,    0,    0,    0,    0,    0,    0,   // 72
+		0,    0,    0,    0,    '/',  '*',  '-',  '+', // 80
+		'\n', '1',  '2',  '3',  '4',  '5',  '6',  '7', // 88
+		'8',  '9',  '0',  '.', '\\',  0,    0,    '=', // 96
+	};
+
+	const int kLControlBitMask = 0b00000001u;
+	const int kLShiftBitMask   = 0b00000010u;
+	const int kLAltBitMask     = 0b00000100u;
+	const int kLGUIBitMask     = 0b00001000u;
+	const int kRControlBitMask = 0b00010000u;
+	const int kRShiftBitMask   = 0b00100000u;
+	const int kRAltBitMask     = 0b01000000u;
+	const int kRGUIBitMask     = 0b10000000u;
 }
-
-const char keycode_map_shifted[256] = {
-	0,    0,    0,    0,    'A',  'B',  'C',  'D', // 0
-  'E',  'F',  'G',  'H',  'I',  'J',  'K',  'L', // 8
-  'M',  'N',  'O',  'P',  'Q',  'R',  'S',  'T', // 16
-  'U',  'V',  'W',  'X',  'Y',  'Z',  '!',  '@', // 24
-  '#',  '$',  '%',  '^',  '&',  '*',  '(',  ')', // 32
-  '\n', '\b', 0x08, '\t', ' ',  '_',  '+',  '{', // 40
-  '}',  '|',  '~',  ':',  '"',  '~',  '<',  '>', // 48
-  '?',  0,    0,    0,    0,    0,    0,    0,   // 56
-  0,    0,    0,    0,    0,    0,    0,    0,   // 64
-  0,    0,    0,    0,    0,    0,    0,    0,   // 72
-  0,    0,    0,    0,    '/',  '*',  '-',  '+', // 80
-  '\n', '1',  '2',  '3',  '4',  '5',  '6',  '7', // 88
-  '8',  '9',  '0',  '.', '\\',  0,    0,    '=', // 96
-};
-
-const int kLControlBitMask = 0b00000001u;
-const int kLShiftBitMask   = 0b00000010u;
-const int kLAltBitMask     = 0b00000100u;
-const int kLGUIBitMask     = 0b00001000u;
-const int kRControlBitMask = 0b00010000u;
-const int kRShiftBitMask   = 0b00100000u;
-const int kRAltBitMask     = 0b01000000u;
-const int kRGUIBitMask     = 0b10000000u;
 
 void InitializeKeyboard(std::deque<Message>& msg_queue) {
 	usb::HIDKeyboardDriver::default_observer =
