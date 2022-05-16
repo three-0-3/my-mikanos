@@ -27,6 +27,7 @@ class Error {
 			kNoWaiter,
 			kNoPCIMSI,
 			kUnknownPixelFormat,
+			kNoSuchTask,
 			kLastOfCode,
 		};
 
@@ -76,6 +77,7 @@ class Error {
 			"kNoWaiter",
 			"kNoPCIMSI",
 			"kUnknownPixelFormat",
+			"kNoSuchTask",
 		};
 		
 		Code code_;
