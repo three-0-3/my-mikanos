@@ -175,9 +175,7 @@ extern "C" void KernelMainNewStack(
 
   const int kTextboxCursorTimer = 1;
   const int kTimer05sec = static_cast<int>(kTimerFreq * 0.5);
-  __asm__("cli");
   timer_manager->AddTimer(Timer{kTimer05sec, kTextboxCursorTimer});
-  __asm__("sti");
   bool textbox_cursor_visible = false;
 
   InitializeTask();
