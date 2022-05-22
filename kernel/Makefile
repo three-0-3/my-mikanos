@@ -8,8 +8,8 @@ OBJS = main.o graphics.o mouse.o font.o hankaku.o newlib_support.o console.o \
        usb/classdriver/mouse.o
 
 CPPFLAGS += -I.
-CFLAGS   += -O2 -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone
-CXXFLAGS += -O2 -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone \
+CFLAGS   += $(OPTMCONF) -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone
+CXXFLAGS += $(OPTMCONF) -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone \
             -fno-exceptions -fno-rtti -std=c++17
 LDFLAGS += --entry KernelMain -z norelro --image-base 0x100000 --static
 
