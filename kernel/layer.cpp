@@ -228,3 +228,12 @@ void InitializeLayer() {
   layer_manager->UpDown(bglayer_id, 0);
   layer_manager->UpDown(console->LayerID(), 1);
 }
+
+void ProcessLayerMessage(const Message& msg) {
+	const auto& arg = msg.arg.layer;
+	switch (arg.op)	{
+	case LayerOperation::Draw:
+		layer_manager->Draw(arg.layer_id);
+		break;
+	}
+}
