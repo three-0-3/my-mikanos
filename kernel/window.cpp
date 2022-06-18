@@ -3,6 +3,27 @@
 #include "logger.hpp"
 #include "font.hpp"
 
+namespace {
+	void DrawTextbox(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size,
+									 const PixelColor& background,
+									 const PixelColor& border_light,
+									 const PixelColor& border_dark) {
+		auto fill_rect =
+			[&writer](Vector2D<int> pos, Vector2D<int> size, const PixelColor& c) {
+				FillRectangle(writer, pos, size, c);
+			};
+
+		// fill main box
+		fill_rect(pos + Vector2D<int>{1, 1}, size - Vector2D<int>{2, 2}, background);
+
+		// draw border lines
+		fill_rect(pos,                            {size.x, 1}, border_dark); // top
+		fill_rect(pos,                            {1, size.y}, border_dark); // left
+		fill_rect(pos + Vector2D<int>{0, size.y}, {size.x, 1}, border_light); // bottom
+		fill_rect(pos + Vector2D<int>{size.x, 0}, {1, size.y}, border_light); // right	
+	}	
+}
+
 Window::Window(int width, int height, PixelFormat shadow_format) : width_{width}, height_{height} {
 	// set the size of the vector class
 	data_.resize(height);
@@ -152,19 +173,11 @@ void DrawWindow(PixelWriter& writer, const char* title) {
 }
 
 void DrawTextbox(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size) {
-	auto fill_rect =
-		[&writer](Vector2D<int> pos, Vector2D<int> size, uint32_t c) {
-			FillRectangle(writer, pos, size, ToColor(c));
-		};
+	DrawTextbox(writer, pos, size, ToColor(0xffffff), ToColor(0xc6c6c6), ToColor(0x848484));
+}
 
-	// fill main box
-	fill_rect(pos + Vector2D<int>{1, 1}, size - Vector2D<int>{2, 2}, 0xffffff);
-
-	// draw border lines
-	fill_rect(pos,                            {size.x, 1}, 0x848484); // top
-	fill_rect(pos,                            {1, size.y}, 0x848484); // left
-	fill_rect(pos + Vector2D<int>{0, size.y}, {size.x, 1}, 0xc6c6c6); // bottom
-	fill_rect(pos + Vector2D<int>{size.x, 0}, {1, size.y}, 0xc6c6c6); // right	
+void DrawTerminal(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size) {
+	DrawTextbox(writer, pos, size, ToColor(0x000000), ToColor(0xc6c6c6), ToColor(0x848484));
 }
 
 void DrawWindowTitle(PixelWriter& writer, const char* title, bool active) {
