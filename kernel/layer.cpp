@@ -285,23 +285,9 @@ void ProcessLayerMessage(const Message& msg) {
 	const auto& arg = msg.arg.layer;
 	switch (arg.op)	{
 	case LayerOperation::Draw:
-		if (arg.layer_id == 7) {
-			auto start = LAPICTimerElapsed();
-			layer_manager->Draw(arg.layer_id);
-			auto elapsed = LAPICTimerElapsed() - start;
-			Log(kWarn, "draw layer 7: elapsed = %u\n", elapsed);
-			break;
-		}
 		layer_manager->Draw(arg.layer_id);
 		break;
 	case LayerOperation::DrawArea:
-		if (arg.layer_id == 7) {
-			auto start = LAPICTimerElapsed();
-			layer_manager->Draw(arg.layer_id, {{arg.x, arg.y}, {arg.w, arg.h}});
-			auto elapsed = LAPICTimerElapsed() - start;
-			Log(kWarn, "draw layer 7: elapsed = %u\n", elapsed);
-			break;
-		}
 		layer_manager->Draw(arg.layer_id, {{arg.x, arg.y}, {arg.w, arg.h}});
 		break;
 	}
