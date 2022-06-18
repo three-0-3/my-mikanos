@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <vector>
+#include <string>
 
 #include "graphics.hpp"
 #include "frame_buffer.hpp"
@@ -25,7 +26,7 @@ class Window {
 		// constructor
 		Window(int width, int height, PixelFormat shadow_format);
 		// deconstructor
-		~Window() = default;
+		virtual ~Window() = default;
 		// omit copy constructor
 		Window(const Window& rhs) = delete;
 		// omit copy assignment operator
@@ -54,6 +55,9 @@ class Window {
 		// Move rectangle in Window area
 		void Move(Vector2D<int> dst_pos, const Rectangle<int>& src);
 
+		virtual void Activate() {}
+		virtual void Deactivate() {}
+
 	private:
 	  // width/height of the drawing area of this window by pixel
 		int width_, height_;
@@ -67,5 +71,40 @@ class Window {
 		FrameBuffer shadow_buffer_{};
 };
 
+class ToplevelWindow : public Window {
+	public:
+		static constexpr Vector2D<int> kTopLeftMargin{4, 24};
+		static constexpr Vector2D<int> kBottomRightMargin{4,4};
+
+		class InnerAreaWriter : public PixelWriter {
+			public:
+				InnerAreaWriter(ToplevelWindow& window) : window_{window} {}
+				virtual void Write(Vector2D<int> pos, const PixelColor& c) override {
+					window_.Write(pos + kTopLeftMargin, c);
+				}
+				virtual int Width() const override {
+					return window_.Width() - kTopLeftMargin.x - kBottomRightMargin.x; }
+				virtual int Height() const override {
+					return window_.Height() - kTopLeftMargin.y - kBottomRightMargin.y; }
+				
+			private:
+				ToplevelWindow& window_;
+		};
+
+		ToplevelWindow(int width, int height, PixelFormat shadow_format,
+									 const std::string& title);
+
+		virtual void Activate() override;
+		virtual void Deactivate() override;
+
+		InnerAreaWriter* InnerWriter() { return &inner_writer_; }
+		Vector2D<int> InnerSize() const;
+
+	private:
+		std::string title_;
+		InnerAreaWriter inner_writer_{*this};
+};
+
 void DrawWindow(PixelWriter& writer, const char* title);
 void DrawTextbox(PixelWriter& writer, Vector2D<int>pos, Vector2D<int> size);
+void DrawWindowTitle(PixelWriter& writer, const char* title, bool active);
