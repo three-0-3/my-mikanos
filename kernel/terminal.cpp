@@ -18,6 +18,8 @@ Terminal::Terminal() {
     .SetWindow(window_)
     .SetDraggable(true)
     .ID();
+
+  Print(">");
 }
 
 Rectangle<int> Terminal::BlinkCursor() {
@@ -52,6 +54,8 @@ Rectangle<int> Terminal::InputKey(
     } else {
       Scroll1();
     }
+    ExecuteLine();
+    Print(">");
     draw_area.pos = ToplevelWindow::kTopLeftMargin;
     draw_area.size = window_->InnerSize();
   } else if (ascii == '\b') {
@@ -86,6 +90,56 @@ void Terminal::Scroll1() {
   window_->Move(ToplevelWindow::kTopLeftMargin + Vector2D<int>{4, 4}, move_src);
   FillRectangle(*window_->InnerWriter(),
                 {4, 4 + 16*cursor_.y}, {8*kColumns, 16}, {0, 0, 0});
+}
+
+void Terminal::ExecuteLine() {
+  char* command = &linebuf_[0];
+  char* first_arg = strchr(&linebuf_[0], ' ');
+  if (first_arg) {
+    *first_arg = 0;
+    ++first_arg;
+  }
+
+  if(strcmp(command, "echo") == 0) {
+    if (first_arg) {
+      Print(first_arg);
+    }
+    Print("\n");
+  } else if (command[0] != 0) {
+    Print("no such command: ");
+    Print(command);
+    Print("\n");
+  }
+}
+
+void Terminal::Print(const char* s) {
+  DrawCursor(false);
+
+  auto newline = [this]() {
+    cursor_.x = 0;
+    if (cursor_.y < kRows - 1) {
+      ++cursor_.y;
+    } else {
+      Scroll1();
+    }
+  };
+
+  while (*s) {
+    if (*s == '\n') {
+      newline();
+    } else {
+      WriteAscii(*window_->Writer(), CalcCursorPos(), *s, {255, 255, 255});
+      if (cursor_.x == kColumns - 1) {
+        newline();
+      } else {
+        ++cursor_.x;
+      }
+    }
+
+    ++s;
+  }
+
+  DrawCursor(true);
 }
 
 void TaskTerminal(uint64_t task_id, int64_t data) {
