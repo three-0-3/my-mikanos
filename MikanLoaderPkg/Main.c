@@ -193,6 +193,29 @@ void CopyLoadSegments(Elf64_Ehdr* ehdr) {
   }
 }
 
+EFI_STATUS ReadFile(EFI_FILE_PROTOCOL* file, VOID** buffer) {
+  EFI_STATUS status;
+
+  UINTN file_info_size = sizeof(EFI_FILE_INFO) + sizeof(CHAR16) * 12;
+  UINT8 file_info_buffer[file_info_size];
+  status = file->GetInfo(
+      file, &gEfiFileInfoGuid,
+      &file_info_size, file_info_buffer);
+  if (EFI_ERROR(status)) {
+    return status;
+  }
+
+  EFI_FILE_INFO* file_info = (EFI_FILE_INFO*)file_info_buffer;
+  UINTN file_size = file_info->FileSize;
+  
+  status = gBS->AllocatePool(EfiLoaderData, file_size, buffer);
+  if (EFI_ERROR(status)) {
+    return status;
+  }
+  
+  return file->Read(file, &file_size, *buffer);
+}
+
 EFI_STATUS EFIAPI UefiMain(
     EFI_HANDLE image_handle,
     EFI_SYSTEM_TABLE *system_table) {
@@ -273,28 +296,10 @@ EFI_STATUS EFIAPI UefiMain(
     Halt();
   }
 
-  UINTN file_info_size = sizeof(EFI_FILE_INFO) + sizeof(CHAR16) * 12;
-  UINT8 file_info_buffer[file_info_size];
-  status = kernel_file->GetInfo(
-    kernel_file, &gEfiFileInfoGuid,
-    &file_info_size, file_info_buffer);
-  if (EFI_ERROR(status)) {
-    Print(L"failed to get file infomration: %r\n", status);
-    Halt();
-  }
-
-  EFI_FILE_INFO* file_info = (EFI_FILE_INFO*)file_info_buffer;
-  UINTN kernel_file_size = file_info->FileSize;
-
   // Secure the location to load the kernel temporarily
   VOID* kernel_buffer;
-  status = gBS->AllocatePool(EfiLoaderData, kernel_file_size, &kernel_buffer);
-  
-  if (EFI_ERROR(status)) {
-    Print(L"failed to allocate pool: %r\n", status);
-    Halt();
-  }
-  status = kernel_file->Read(kernel_file, &kernel_file_size, kernel_buffer);
+  status = ReadFile(kernel_file, &kernel_buffer);
+
   if (EFI_ERROR(status)) {
     Print(L"failed to read kernel file: %r\n", status);
     Halt();
