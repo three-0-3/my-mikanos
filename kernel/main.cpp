@@ -19,6 +19,7 @@
 #include "asmfunc.h"
 #include "task.hpp"
 #include "terminal.hpp"
+#include "fat.hpp"
 
 void operator delete(void* obj) noexcept {
 }
@@ -127,6 +128,7 @@ extern "C" void KernelMainNewStack(
   InitializeMemoryManager(memory_map);
   InitializeInterrupt();
 
+  fat::Initialize(volume_image);
   InitializePCI();
 
   InitializeLayer();
