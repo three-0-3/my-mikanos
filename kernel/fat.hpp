@@ -6,7 +6,7 @@ namespace fat {
 
 struct BPB {
   uint8_t jump_boot[3];
-  char oem_name;
+  char oem_name[8];
   uint16_t bytes_per_sector;
   uint8_t sector_per_cluster;
   uint16_t reserved_sector_count;
