@@ -138,12 +138,9 @@ void Terminal::ExecuteLine() {
         * fat::boot_volume_image->sectors_per_cluster;
     char base[9], ext[4];
     char s[64];
-    Log(kWarn, "root_dir_entries: %x\nentries: %lu\nbytes_per_Sector: %x\nsector_per_cluster: %x\nsize of DE: %x\n", root_dir_entries, entries_per_cluster, fat::boot_volume_image->bytes_per_sector, fat::boot_volume_image->sectors_per_cluster, sizeof(fat::DirectoryEntry));
     for (int i = 0; i < entries_per_cluster; ++i) {
       ReadName(root_dir_entries[i], base, ext);
-      Log(kWarn, "i:%d base.ext=%s.%s\n", i, base, ext);
       if (base[0] == 0x00) {
-        Log(kWarn, "Checked all entries\n");
         break;
       } else if (static_cast<uint8_t>(base[0]) == 0xe5) {
         continue;
