@@ -8,14 +8,14 @@ struct BPB {
   uint8_t jump_boot[3];
   char oem_name[8];
   uint16_t bytes_per_sector;
-  uint8_t sector_per_cluster;
+  uint8_t sectors_per_cluster;
   uint16_t reserved_sector_count;
   uint8_t num_fats;
-  uint16_t room_entry_count;
-  uint16_t total_sector_16;
+  uint16_t root_entry_count;
+  uint16_t total_sectors_16;
   uint8_t media;
   uint16_t fat_size_16;
-  uint16_t sector_per_track;
+  uint16_t sectors_per_track;
   uint16_t num_heads;
   uint32_t hidden_sectors;
   uint32_t total_sectors_32;
@@ -38,19 +38,19 @@ enum class Attribute : uint8_t {
   kReadOnly  = 0x01,
   kHidden    = 0x02,
   kSystem    = 0x04,
-  kVolumeId  = 0x08,
+  kVolumeID  = 0x08,
   kDirectory = 0x10,
   kArchive   = 0x20,
   kLongName  = 0x0f,
 };
 
 struct DirectoryEntry {
-  char name[11];
+  unsigned char name[11];
   Attribute attr;
   uint8_t ntres;
-  uint8_t creation_time_tenth;
-  uint16_t creation_time;
-  uint16_t creation_date;
+  uint8_t create_time_tenth;
+  uint16_t create_time;
+  uint16_t create_date;
   uint16_t last_access_date;
   uint16_t first_cluster_high;
   uint16_t write_time;
@@ -62,7 +62,7 @@ struct DirectoryEntry {
     return first_cluster_low |
       (static_cast<uint32_t>(first_cluster_high) << 16);
   }
-}__attribute__((packed));
+} __attribute__((packed));
 
 extern BPB* boot_volume_image;
 void Initialize(void* volume_image);
