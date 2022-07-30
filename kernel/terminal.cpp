@@ -289,6 +289,7 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
       __asm__("sti");
       continue;
     }
+    __asm__("sti");
 
     switch (msg->type) {
     case Message::kTimerTimeout:
