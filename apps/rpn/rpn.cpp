@@ -1,20 +1,5 @@
-int strcmp(const char* a, const char* b) {
-  int i = 0;
-  for (; a[i] != 0 && b[i] != 0; ++i) {
-    if (a[i] != b[i]) {
-      return a[i] - b[i];
-    }
-  }
-  return a[i] - b[i];
-}
-
-long atol(const char* s) {
-  long v = 0;
-  for (int i = 0; s[i] != 0; ++i) {
-    v = v * 10 + (s[i] - '0');
-  }
-  return v;
-}
+#include <cstring>
+#include <cstdlib>
 
 int stack_ptr;
 long stack[100];
