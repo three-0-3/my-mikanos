@@ -87,4 +87,21 @@ bool NameIsEqual(const DirectoryEntry& entry, const char* name) {
   return memcmp(entry.name, name83, sizeof(name83)) == 0;
 }
 
+size_t LoadFile(void* buf, size_t len, const DirectoryEntry& entry) {
+  auto cluster = entry.FirstCluster();
+
+  const auto buf_uint8 = reinterpret_cast<uint8_t*>(buf);
+  const auto buf_end = buf_uint8 + len;
+  auto p = buf_uint8;
+
+  while (cluster != 0 && cluster != fat::kEndOfClusterchain) {
+    const auto copy_bytes = fat::bytes_per_cluster < buf_end - p ?
+      fat::bytes_per_cluster : buf_end - p;
+    memcpy(p, fat::GetSectorByCluster<uint8_t>(cluster), copy_bytes);
+    p += copy_bytes;
+    cluster = fat::NextCluster(cluster);
+  }
+  return p - buf_uint8;
+}
+
 }

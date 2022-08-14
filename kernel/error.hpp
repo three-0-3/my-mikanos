@@ -28,6 +28,7 @@ class Error {
 			kNoPCIMSI,
 			kUnknownPixelFormat,
 			kNoSuchTask,
+			kInvalidFormat,
 			kLastOfCode,
 		};
 
@@ -78,6 +79,7 @@ class Error {
 			"kNoPCIMSI",
 			"kUnknownPixelFormat",
 			"kNoSuchTask",
+			"kInvalidFormat",
 		};
 		
 		Code code_;
