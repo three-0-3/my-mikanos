@@ -88,17 +88,22 @@ bool NameIsEqual(const DirectoryEntry& entry, const char* name) {
 }
 
 size_t LoadFile(void* buf, size_t len, const DirectoryEntry& entry) {
+  auto is_valid_cluster = [](uint32_t c) {
+    return c != 0 && c != fat::kEndOfClusterchain;
+  };
   auto cluster = entry.FirstCluster();
 
   const auto buf_uint8 = reinterpret_cast<uint8_t*>(buf);
   const auto buf_end = buf_uint8 + len;
   auto p = buf_uint8;
 
-  while (cluster != 0 && cluster != fat::kEndOfClusterchain) {
-    const auto copy_bytes = fat::bytes_per_cluster < buf_end - p ?
-      fat::bytes_per_cluster : buf_end - p;
-    memcpy(p, fat::GetSectorByCluster<uint8_t>(cluster), copy_bytes);
-    p += copy_bytes;
+  while (is_valid_cluster(cluster)) {
+    if (fat::bytes_per_cluster >= buf_end - p) {
+      memcpy(p, fat::GetSectorByCluster<uint8_t>(cluster), buf_end - p);
+      return len;
+    }
+    memcpy(p, fat::GetSectorByCluster<uint8_t>(cluster), bytes_per_cluster);
+    p += bytes_per_cluster;
     cluster = fat::NextCluster(cluster);
   }
   return p - buf_uint8;
