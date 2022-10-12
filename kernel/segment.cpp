@@ -3,26 +3,34 @@
 #include <array>
 
 #include "asmfunc.h"
+#include "interrupt.hpp"
+#include "logger.hpp"
+#include "memory_manager.hpp"
 
 // gdt is never used outside of this file
 namespace {
-	std::array<SegmentDescriptor, 5> gdt;
+	std::array<SegmentDescriptor, 7> gdt;
+	std::array<uint32_t, 26> tss;
+
+  static_assert((kTSS >> 3) + 1 < gdt.size());
 }
 
 // create the code segment descriptor entry to gdt
 void SetCodeSegment(SegmentDescriptor& desc,
 										SegmentDescriptorType type,
-										unsigned int descriptor_privilege_level) {
+										unsigned int descriptor_privilege_level,
+										uint32_t base = 0,
+										uint32_t limit = 0) {
 
 	// initialize all the bits with 0
 	desc.data = 0;
 
-	// no definition for the following items (ignored in 64 bit mode)
-	//   base_low
-	//   base_middle
-	//   base_high
-	//   limit_low
-	//   limit_high
+	desc.bits.base_low = base & 0xffffu;
+	desc.bits.base_middle = (base >> 16) & 0xffu;
+	desc.bits.base_high = (base >> 24) & 0xffu;
+
+	desc.bits.limit_low = limit & 0xffffu;
+	desc.bits.limit_high = (limit >> 16) & 0xfu;
 
 	desc.bits.type = type;
 	desc.bits.system_segment = 1; // 1: code & data segment
@@ -42,6 +50,16 @@ void SetDataSegment(SegmentDescriptor& desc,
 	desc.bits.default_operation_size = 1; // set 1 to be in sync with syscall (to be define later) 	
 }
 
+void SetSystemSegment(SegmentDescriptor& desc,
+											SegmentDescriptorType type,
+											unsigned int descriptor_privilege_level,
+											uint32_t base,
+											uint32_t limit) {
+		SetCodeSegment(desc, type, descriptor_privilege_level, base, limit);
+		desc.bits.system_segment = 0;
+		desc.bits.long_mode = 0;
+}
+
 void SetupSegments() {
 	gdt[0].data = 0;
 	SetCodeSegment(gdt[1], SegmentDescriptorType::kExecuteRead, 0);
@@ -58,4 +76,25 @@ void InitializeSegmentation() {
 	SetDSAll(kKernelDS);
   // set code and data segment descriptor to CS/SS registers
 	SetCSSS(kKernelCS, kKernelSS);
+}
+
+void InitializeTSS() {
+	const int kRSP0Frames = 8; // 8 * 4KiB = 32KiB is stack size for interrupt handler
+  auto [ stack0, err ] = memory_manager->Allocate(kRSP0Frames);
+	if (err) {
+		Log(kError, "failed to allocate rsp0: %s\n", err.Name());
+		exit(1);
+	}
+
+	uint64_t rsp0 =
+	  reinterpret_cast<uint64_t>(stack0.Frame()) + kRSP0Frames * 4096;
+	tss[1] = rsp0 & 0xffffffff;
+	tss[2] = rsp0 >> 32;
+
+	uint64_t tss_addr = reinterpret_cast<uint64_t>(&tss[0]);
+	SetSystemSegment(gdt[kTSS >> 3], SegmentDescriptorType::kTSSAvailable, 0,
+	                 tss_addr & 0xffffffff, sizeof(tss)-1);
+	gdt[(kTSS >> 3) + 1].data = tss_addr >> 32;
+
+	LoadTR(kTSS);
 }

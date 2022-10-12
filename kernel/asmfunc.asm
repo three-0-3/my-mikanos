@@ -177,3 +177,8 @@ CallApp:  ; void CallApp(int argc, char** argv, uint16_t cs, uint16_t ss, uint64
 		push rdx  ; CS
 		push r8   ; RIP
     o64 retf
+
+global LoadTR
+LoadTR:  ; void LoadTR(uint16_t sel);
+		ltr di
+		ret

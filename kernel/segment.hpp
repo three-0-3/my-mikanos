@@ -3,8 +3,12 @@
 #include <cstdint>
 
 enum SegmentDescriptorType {
-	kReadWrite = 2,
-	kExecuteRead = 10,
+	// system segment & gate descriptor types
+	kTSSAvailable = 9,
+
+	// code & data segment types
+	kReadWrite    = 2,
+	kExecuteRead  = 10,
 };
 
 union SegmentDescriptor {
@@ -28,7 +32,9 @@ union SegmentDescriptor {
 
 void SetCodeSegment(SegmentDescriptor& desc,
 										SegmentDescriptorType type,
-										unsigned int descriptor_privilege_level);
+										unsigned int descriptor_privilege_level,
+										uint32_t base,
+										uint32_t limit);
 
 void SetDataSegment(SegmentDescriptor& desc,
 										SegmentDescriptorType type,
@@ -38,7 +44,9 @@ void SetDataSegment(SegmentDescriptor& desc,
 const uint16_t kKernelCS = 1 << 3;
 const uint16_t kKernelSS = 2 << 3;
 const uint16_t kKernelDS = 0;
+const uint16_t kTSS = 5 << 3;
 
 // create and load gdt
 void SetupSegments();
 void InitializeSegmentation();
+void InitializeTSS();
