@@ -1,6 +1,8 @@
 #include <cstring>
 #include <cstdlib>
 
+auto& printk = *reinterpret_cast<int (*)(const char*, ...)>(0x000000000010b000);
+
 int stack_ptr;
 long stack[100];
 
@@ -23,6 +25,7 @@ extern "C" int main(int argc, char** argv) {
       long b = Pop();
       long a = Pop();
       Push(a + b);
+      printk("[%d] <- %ld\n", stack_ptr, a + b);
     } else if (strcmp(argv[i], "-") == 0) {
       long b = Pop();
       long a = Pop();
