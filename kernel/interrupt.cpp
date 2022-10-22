@@ -36,12 +36,6 @@ namespace {
 		task_manager->SendMessage(1, Message{Message::kInterruptXHCI}); // 1 is main task
 		NotifyEndOfInterrupt();
 	}
-
-	// interrupt handler function for Local APIC Timer
-	__attribute__((interrupt))
-	void IntHandlerLAPICTimer(InterruptFrame* frame) {
-		LAPICTimerOnInterrupt();
-	}
 }
 
 void InitializeInterrupt() {	
