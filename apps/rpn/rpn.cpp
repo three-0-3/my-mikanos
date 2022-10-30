@@ -1,5 +1,6 @@
 #include <cstring>
 #include <cstdlib>
+#include <cstdio>
 
 int stack_ptr;
 long stack[100];
@@ -32,9 +33,13 @@ extern "C" int main(int argc, char** argv) {
       Push(a);
     }
   }
-  if (stack_ptr < 0) {
-    return 0;
+
+  long result = 0;
+  if (stack_ptr >= 0) {
+    result = Pop();
   }
+
+  printf("%ld\n", result);
   while (1);
   // return static_cast<int>(Pop());
 }
