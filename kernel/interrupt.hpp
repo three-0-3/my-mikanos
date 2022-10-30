@@ -46,6 +46,8 @@ constexpr InterruptDescriptorAttribute MakeIDTAttr(
 	return attr;
 }
 
+const int kISTForTimer = 1; // index of the interrupt stack table
+
 // set the value of attribute, offset, segment selector to the interrupt descriptor entry
 void SetIDTEntry(InterruptDescriptor& desc,
 								 InterruptDescriptorAttribute attr,
