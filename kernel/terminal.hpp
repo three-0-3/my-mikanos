@@ -15,6 +15,8 @@ class Terminal {
     Rectangle<int> BlinkCursor();
     Rectangle<int> InputKey(uint8_t modifier, uint8_t keycode, char ascii);
 
+    void Print(const char* s, std::optional<size_t> len = std::nullopt);
+
   private:
     std::shared_ptr<ToplevelWindow> window_;
     unsigned int layer_id_;
@@ -31,7 +33,6 @@ class Terminal {
 
     void ExecuteLine();
     Error ExecuteFile(const fat::DirectoryEntry& file_entry, char* command, char* first_arg);
-    void Print(const char* s);
     void Print(char c);
 
     std::deque<std::array<char, kLineMax>> cmd_history_{};
