@@ -172,13 +172,20 @@ RestoreContext:  ; void RestoreContext(void* task_context);
 	o64 iret
 
 global CallApp
-CallApp:  ; void CallApp(int argc, char** argv, uint16_t cs, uint16_t ss, uint64_t rip, uint64_t rsp);
+CallApp:  ; void CallApp(int argc, char** argv, uint16_t ss, uint64_t rip, uint64_t rsp, uint64_t* os_stack_ptr);
+		push rbx
     push rbp
-		mov rbp, rsp
-		push rcx  ; SS
-		push r9   ; RSP
+		push r12
+		push r13
+		push r14
+		push r15
+		mov [r9], rsp ; Save os stack pointer
+
+		push rdx  ; SS
+		push r8   ; RSP
+		add rdx, 8
 		push rdx  ; CS
-		push r8   ; RIP
+		push rcx   ; RIP
     o64 retf
 
 extern LAPICTimerOnInterrupt
@@ -268,6 +275,8 @@ SyscallEntry:  ; void SyscallEntry(void);
 		push rcx  ; original RIP
 		push r11  ; original RFLAGS
 
+		push rax  ; save system call number
+
 		mov rcx, r10
 		and eax, 0x7fffffff
 		mov rbp, rsp
@@ -279,7 +288,24 @@ SyscallEntry:  ; void SyscallEntry(void);
 
 		mov rsp, rbp
 
+		pop rsi  ; restore system call number
+		cmp esi, 0x80000002
+		je  .exit
+
 		pop r11
 		pop rcx
 		pop rbp
 		o64 sysret
+
+.exit:
+		mov rsp, rax  ; restore os stack
+		mov eax, edx  ; return errno
+
+		pop r15
+		pop r14
+		pop r13
+		pop r12
+		pop rbp
+		pop rbx
+		
+		ret  ; jump to the next line of CallApp
