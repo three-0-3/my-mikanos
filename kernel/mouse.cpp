@@ -5,33 +5,33 @@
 #include "layer.hpp"
 
 namespace {
-	// Mouse shape
-	const char mouse_cursor_shape[kMouseCursorHeight][kMouseCursorWidth + 1] = {
-		"@              ",
-		"@@             ",
-		"@.@            ",
-		"@..@           ",
-		"@...@          ",
-		"@....@         ",
-		"@.....@        ",
-		"@......@       ",
-		"@.......@      ",
-		"@........@     ",
-		"@.........@    ",
-		"@..........@   ",
-		"@...........@  ",
-		"@............@ ",
-		"@......@@@@@@@@",
-		"@......@       ",
-		"@....@@.@      ",
-		"@...@ @.@      ",
-		"@..@   @.@     ",
-		"@.@    @.@     ",
-		"@@      @.@    ",
-		"@       @.@    ",
-		"         @.@   ",
-		"         @@@   ",
-	};
+  // Mouse shape
+  const char mouse_cursor_shape[kMouseCursorHeight][kMouseCursorWidth + 1] = {
+    "@              ",
+    "@@             ",
+    "@.@            ",
+    "@..@           ",
+    "@...@          ",
+    "@....@         ",
+    "@.....@        ",
+    "@......@       ",
+    "@.......@      ",
+    "@........@     ",
+    "@.........@    ",
+    "@..........@   ",
+    "@...........@  ",
+    "@............@ ",
+    "@......@@@@@@@@",
+    "@......@       ",
+    "@....@@.@      ",
+    "@...@ @.@      ",
+    "@..@   @.@     ",
+    "@.@    @.@     ",
+    "@@      @.@    ",
+    "@       @.@    ",
+    "         @.@   ",
+    "         @@@   ",
+  };
 }
 
 void DrawMouseCursor(PixelWriter* pixel_writer, Vector2D<int> position) {
@@ -42,8 +42,8 @@ void DrawMouseCursor(PixelWriter* pixel_writer, Vector2D<int> position) {
       } else if (mouse_cursor_shape[dy][dx] == '.') {
         pixel_writer->Write(position + Vector2D<int>{dx, dy}, {255, 255, 255});
       } else {
-				pixel_writer->Write(position + Vector2D<int>{dx, dy}, kMouseTransparentColor);
-			}
+        pixel_writer->Write(position + Vector2D<int>{dx, dy}, kMouseTransparentColor);
+      }
     }
   }
 }
@@ -103,7 +103,7 @@ void InitializeMouse() {
   mouse->SetPosition({10, 20});
   layer_manager->UpDown(mouse_layer_id, std::numeric_limits<int>::max());
 
-	// set mouse callback method
+  // set mouse callback method
   usb::HIDMouseDriver::default_observer =
     [mouse](uint8_t buttons, int8_t displacement_x, int8_t displacement_y) {
       mouse->OnInterrupt(buttons, displacement_x, displacement_y);

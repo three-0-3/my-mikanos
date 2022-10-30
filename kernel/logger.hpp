@@ -1,10 +1,10 @@
 #pragma once
 
 enum LogLevel {
-	kError = 3,
-	kWarn  = 4,
-	kInfo  = 6,
-	kDebug = 7,
+  kError = 3,
+  kWarn  = 4,
+  kInfo  = 6,
+  kDebug = 7,
 };
 
 // Set the log level thredhold
