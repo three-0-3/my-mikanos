@@ -1,6 +1,7 @@
 #pragma once
 
 #include <deque>
+#include <map>
 #include "window.hpp"
 #include "fat.hpp"
 
@@ -9,7 +10,7 @@ class Terminal {
     static const int kRows = 15, kColumns = 60;
     static const int kLineMax = 128;
 
-    Terminal();
+    Terminal(uint64_t task_id);
     unsigned int LayerID() const { return layer_id_; }
     Rectangle<int> BlinkCursor();
     Rectangle<int> InputKey(uint8_t modifier, uint8_t keycode, char ascii);
@@ -17,6 +18,7 @@ class Terminal {
   private:
     std::shared_ptr<ToplevelWindow> window_;
     unsigned int layer_id_;
+    uint64_t task_id_;
 
     Vector2D<int> cursor_{0, 0};
     bool cursor_visible_{false};
@@ -37,4 +39,5 @@ class Terminal {
     Rectangle<int> HistoryUpDown(int direction);
 };
 
+extern std::map<uint64_t, Terminal*>* terminals;
 void TaskTerminal(uint64_t task_id, int64_t data);
