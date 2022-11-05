@@ -108,18 +108,28 @@ SYSCALL(WinWriteString) {
     }, arg1, arg2, arg3, arg4, reinterpret_cast<const char*>(arg5));
 }
 
+SYSCALL(WinFillRectangle) {
+  return DoWinFunc(
+    [](Window& win,
+       int x, int y, int w, int h, uint32_t color) {
+      FillRectangle(*win.Writer(), {x, y}, {w, h}, ToColor(color));
+      return Result{ 0, 0 };
+    }, arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
 #undef SYSCALL
 
 } // namespace syscall
 
 using SyscallFuncType = syscall::Result (uint64_t, uint64_t, uint64_t, 
                                  uint64_t, uint64_t, uint64_t);
-extern "C" std::array<SyscallFuncType*, 5> syscall_table{
+extern "C" std::array<SyscallFuncType*, 6> syscall_table{
   /* 0x00 */ syscall::LogString,
   /* 0x01 */ syscall::PutString,
   /* 0x02 */ syscall::Exit,
   /* 0x03 */ syscall::OpenWindow,
   /* 0x04 */ syscall::WinWriteString,
+  /* 0x05 */ syscall::WinFillRectangle,
 };
 
 void InitializeSyscall() {
