@@ -46,3 +46,6 @@ ssize_t write(int fd, const void* buf, size_t count) {
   return -1;
 }
 
+void _exit(int status) {
+  SyscallExit(status);
+}
