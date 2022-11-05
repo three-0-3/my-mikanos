@@ -3,4 +3,4 @@ section .text
 
 loop:
     hlt
-		jmp loop
+    jmp loop
