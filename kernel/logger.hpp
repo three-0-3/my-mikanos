@@ -9,7 +9,7 @@ enum LogLevel {
 
 // Set the log level thredhold
 // Hereafter, only the logs over the configured value will be input
-void SetLogLevel(LogLevel level);
+void SetLogLevel(enum LogLevel level);
 
 // Print the log
-int Log(LogLevel level, const char* format, ...);
+int Log(enum LogLevel level, const char* format, ...);
