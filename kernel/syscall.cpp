@@ -100,8 +100,8 @@ namespace {
       __asm__("cli");
       layer_manager->Draw(layer_id);
       __asm__("sti");
-      return res;
     }
+    return res;
   }
 }
 
