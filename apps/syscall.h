@@ -21,6 +21,7 @@ void SyscallExit(int exit_code);
 struct SyscallResult SyscallOpenWindow(int w, int h, int x, int y, const char* title);
 struct SyscallResult SyscallWinWriteString(unsigned int layer_id, int x, int y, uint32_t color, const char* s);
 struct SyscallResult SyscallWinFillRectangle(unsigned int layer_id, int x, int y, int w, int h, uint32_t color);
+struct SyscallResult SyscallGetCurrentTick();
 
 #ifdef __cplusplus
 }
