@@ -25,6 +25,7 @@ struct SyscallResult SyscallWinWriteString(uint64_t layer_id_flags, int x, int y
 struct SyscallResult SyscallWinFillRectangle(uint64_t layer_id_flags,int x, int y, int w, int h, uint32_t color);
 struct SyscallResult SyscallGetCurrentTick();
 struct SyscallResult SyscallWinRedraw(uint64_t layer_id_flags);
+struct SyscallResult SyscallWinDrawLine(uint64_t layer_id_flags, int x0, int y0, int x1, int y1, uint32_t color);
 
 #ifdef __cplusplus
 }

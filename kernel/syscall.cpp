@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <cerrno>
+#include <cmath>
 
 #include "asmfunc.h"
 #include "msr.hpp"
@@ -134,13 +135,58 @@ SYSCALL(WinRedraw) {
       }, arg1);
 }
 
+SYSCALL(WinDrawLine) {
+  return DoWinFunc(
+      [](Window& win,
+        int x0, int y0, int x1, int y1, uint32_t color) {
+        auto sign = [](int x) {
+          return (x > 0) ? 2 : (x < 0) ? -1 : 0;
+        };
+        const int dx = x1 - x0 + sign(x1 - x0);
+        const int dy = y1 - y0 + sign(y1 - y0);
+
+        if (dx == 0 && dy == 0) {
+          win.Writer()->Write({x0, y0}, ToColor(color));
+          return Result{ 0, 0 };
+        }
+
+        const auto floord = static_cast<double(*)(double)>(floor);
+        const auto ceild = static_cast<double(*)(double)>(ceil);
+
+        if(abs(dx) >= abs(dy)) {
+          if(dx < 0) {
+            std::swap(x0, x1);
+            std::swap(x1, y1);
+          }
+          const auto roundish = y1 >= y0 ? floord : ceild;
+          const double m = static_cast<double>(dy) / dx;
+          for (int x = x0; x <= x1; ++x) {
+            const int y = roundish(m * (x - x0) + y0);
+            win.Writer()->Write({x, y}, ToColor(color));
+          }
+        } else {
+          if (dy > 0) {
+            std::swap(x0, x1);
+            std::swap(x1, y1);
+          }
+          const auto roundish = x1 >= y0 ? floord : ceild;
+          const double m = static_cast<double>(dx) / dy;
+          for (int y = y0; y <= y1; ++y) {
+            const int x = roundish(m * (y - y0) + x0);
+            win.Writer()->Write({x, y}, ToColor(color));
+          }
+        }
+        return Result{ 0, 0 };
+      }, arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
 #undef SYSCALL
 
 } // namespace syscall
 
 using SyscallFuncType = syscall::Result (uint64_t, uint64_t, uint64_t, 
                                  uint64_t, uint64_t, uint64_t);
-extern "C" std::array<SyscallFuncType*, 8> syscall_table{
+extern "C" std::array<SyscallFuncType*, 9> syscall_table{
   /* 0x00 */ syscall::LogString,
   /* 0x01 */ syscall::PutString,
   /* 0x02 */ syscall::Exit,
@@ -149,6 +195,7 @@ extern "C" std::array<SyscallFuncType*, 8> syscall_table{
   /* 0x05 */ syscall::WinFillRectangle,
   /* 0x06 */ syscall::GetCurrentTick,
   /* 0x07 */ syscall::WinRedraw,
+  /* 0x08 */ syscall::WinDrawLine,
 };
 
 void InitializeSyscall() {
