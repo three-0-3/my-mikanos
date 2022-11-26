@@ -33,7 +33,7 @@ extern "C" void main(int argc, char** argv) {
     const int x = kRadius * cos(M_PI * deg / 180.0);
     const int y = kRadius * sin(M_PI * deg / 180.0);
     SyscallWinDrawLine(layer_id, x0, y0, x0 + x, y0 + y, Color(deg));
-    SyscallWinDrawLine(layer_id, x1, y1, x1 + x, y1 + y, Color(deg + 90));
+    SyscallWinDrawLine(layer_id, x1, y1, x1 + x, y1 - y, Color(deg + 90));
   }
   exit(0);
 }
