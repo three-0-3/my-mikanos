@@ -46,6 +46,8 @@ class LayerManager {
     void SetWriter(FrameBuffer* screen);
     // create new layer and save in layer manager
     Layer& NewLayer();
+    // remove layer by id
+    void RemoveLayer(unsigned int id);
 
     // draw the layers (only specified area)
     void Draw(const Rectangle<int>& area) const;
