@@ -156,7 +156,7 @@ SYSCALL(WinDrawLine) {
         if(abs(dx) >= abs(dy)) {
           if(dx < 0) {
             std::swap(x0, x1);
-            std::swap(x1, y1);
+            std::swap(y0, y1);
           }
           const auto roundish = y1 >= y0 ? floord : ceild;
           const double m = static_cast<double>(dy) / dx;
@@ -165,9 +165,9 @@ SYSCALL(WinDrawLine) {
             win.Writer()->Write({x, y}, ToColor(color));
           }
         } else {
-          if (dy > 0) {
+          if (dy < 0) {
             std::swap(x0, x1);
-            std::swap(x1, y1);
+            std::swap(y0, y1);
           }
           const auto roundish = x1 >= y0 ? floord : ceild;
           const double m = static_cast<double>(dx) / dy;
