@@ -44,11 +44,11 @@ void StopLAPICTimer() {
   initial_count = 0;
 }
 
-Timer::Timer(unsigned long timeout, int value) : timeout_{timeout}, value_{value} {
+Timer::Timer(unsigned long timeout, int value, uint64_t task_id) : timeout_{timeout}, value_{value}, task_id_{task_id} {
 }
 
 TimerManager::TimerManager() {
-  timers_.push(Timer{std::numeric_limits<unsigned long>::max(), -1});
+  timers_.push(Timer{std::numeric_limits<unsigned long>::max(), 0, 0});
 }
 
 void TimerManager::AddTimer(const Timer& timer) {
@@ -68,14 +68,14 @@ bool TimerManager::Tick() {
     if (t.Value() == kTaskTimerValue) {
       task_timer_timeout = true;
       timers_.pop();
-      timers_.push(Timer{tick_ + kTaskTimerPeriod, kTaskTimerValue});
+      timers_.push(Timer{tick_ + kTaskTimerPeriod, kTaskTimerValue, 1});
       continue;
     }
 
     Message m{Message::kTimerTimeout};
     m.arg.timer.timeout = t.Timeout();
     m.arg.timer.value = t.Value();
-    task_manager->SendMessage(1, m); // 1 is main task
+    task_manager->SendMessage(t.TaskID(), m); // 1 is main task
 
     timers_.pop();
   }
