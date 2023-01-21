@@ -208,7 +208,9 @@ extern "C" void KernelMainNewStack(
       break;
     case Message::kKeyPush:
       if (auto act = active_layer->GetActive(); act == text_window_layer_id) {
-        InputTextWindow(msg->arg.keyboard.ascii);
+        if (msg->arg.keyboard.press) {
+          InputTextWindow(msg->arg.keyboard.ascii);
+        }
       } else {
         __asm__("cli");
         auto task_it = layer_task_map->find(act);

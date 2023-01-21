@@ -573,7 +573,7 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
       }
       break;
     case Message::kKeyPush:
-      {
+      if (msg->arg.keyboard.press) {
         const auto area = terminal->InputKey(msg->arg.keyboard.modifier,
                                              msg->arg.keyboard.keycode,
                                              msg->arg.keyboard.ascii);
