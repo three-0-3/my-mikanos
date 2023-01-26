@@ -13,10 +13,19 @@ int fstat(int fd, struct stat* buf) {
   return -1;
 }
 
+pid_t getpid(void) {
+  return 0;
+}
+
 int isatty(int fd) {
   errno = EBADF;
   return -1;
 }
+
+int kill (int pid, int sig) {
+  errno = EPERM;
+  return -1;
+} 
 
 off_t lseek(int fd, off_t offset, int whence) {
   errno = EBADF;
