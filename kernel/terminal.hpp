@@ -10,7 +10,7 @@ class Terminal {
     static const int kRows = 15, kColumns = 60;
     static const int kLineMax = 128;
 
-    Terminal(uint64_t task_id);
+    Terminal(uint64_t task_id, bool show_window);
     unsigned int LayerID() const { return layer_id_; }
     Rectangle<int> BlinkCursor();
     Rectangle<int> InputKey(uint8_t modifier, uint8_t keycode, char ascii);
@@ -38,6 +38,8 @@ class Terminal {
     std::deque<std::array<char, kLineMax>> cmd_history_{};
     int cmd_history_index_{-1};
     Rectangle<int> HistoryUpDown(int direction);
+
+    bool show_window_;
 };
 
 extern std::map<uint64_t, Terminal*>* terminals;
