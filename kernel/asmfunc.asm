@@ -315,8 +315,14 @@ SyscallEntry:  ; void SyscallEntry(void);
     o64 sysret
 
 .exit:
-    mov rsp, rax  ; restore os stack
-    mov eax, edx  ; return errno
+    mov rdi, rax  ; os stack
+    mov esi, edx  ; errno
+    jmp ExitApp
+
+global ExitApp    ; void ExitApp(uint64_t rsp, int32_t ret_val);
+ExitApp:
+    mov rsp, rdi  ; restore os stack
+    mov eax, esi  ; return errno
 
     pop r15
     pop r14

@@ -29,6 +29,7 @@ class Error {
       kUnknownPixelFormat,
       kNoSuchTask,
       kInvalidFormat,
+      kInvalidFile,
       kLastOfCode,
     };
 
@@ -80,6 +81,7 @@ class Error {
       "kUnknownPixelFormat",
       "kNoSuchTask",
       "kInvalidFormat",
+      "kInvalidFile",
     };
     
     Code code_;
