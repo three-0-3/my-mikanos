@@ -403,7 +403,7 @@ void Terminal::ExecuteLine() {
       Print(s);
     }
   } else if (strcmp(command, "ls") == 0) {
-    if (first_arg[0] == '\0') {
+    if (!first_arg || first_arg[0] == '\0') {
       ListAllEntries(this, fat::boot_volume_image->root_cluster);
     } else {
       auto [ dir, post_slash ] = fat::FindFile(first_arg);
