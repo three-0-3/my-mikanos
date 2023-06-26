@@ -35,6 +35,9 @@ struct SyscallResult SyscallReadEvent(struct AppEvent* events, size_t len);
 #define TIMER_ONESHOT_ABS 0
 struct SyscallResult SyscallCreateTimer(unsigned int type, int timer_value, unsigned long timeout_ms);
 
+struct SyscallResult SyscallOpenFile(const char* path, int flags);
+struct SyscallResult SyscallReadFile(int fd, void* buf, size_t count);
+
 #ifdef __cplusplus
 }
 #endif

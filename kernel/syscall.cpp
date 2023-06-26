@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cerrno>
 #include <cmath>
+#include <fcntl.h>
 
 #include "asmfunc.h"
 #include "msr.hpp"
@@ -301,13 +302,63 @@ SYSCALL(CreateTimer) {
   return { timeout * 1000 / kTimerFreq, 0 };
 }
 
+namespace {
+  size_t AllocateFD(Task& task) {
+    const size_t num_files = task.Files().size();
+    for (size_t i = 0; i < num_files; ++i) {
+      if (!task.Files()[i]) {
+        return i;
+      }
+    }
+    task.Files().emplace_back();
+    return num_files;
+  }
+}
+
+SYSCALL(OpenFile) {
+  const char* path = reinterpret_cast<const char*>(arg1);
+  const int flags = arg2;
+  __asm__("cli");
+  auto& task = task_manager->CurrentTask();
+  __asm__("sti");
+
+  if ((flags & O_ACCMODE) == O_WRONLY) {
+    return { 0, EINVAL };
+  }
+
+  auto [ dir, post_slash ] = fat::FindFile(path);
+  if (dir == nullptr) {
+    return { 0, ENOENT };
+  } else if (dir->attr != fat::Attribute::kDirectory && post_slash) {
+    return { 0, ENOENT };
+  }
+
+  size_t fd = AllocateFD(task);
+  task.Files()[fd] = std::make_unique<fat::FileDescriptor>(*dir);
+  return { fd, 0 };
+}
+
+SYSCALL(ReadFile) {
+  const int fd = arg1;
+  void* buf = reinterpret_cast<void*>(arg2);
+  size_t count = arg3;
+  __asm__("cli");
+  auto& task = task_manager->CurrentTask();
+  __asm__("sti");
+
+  if (fd < 0 || task.Files().size() <= fd || !task.Files()[fd]) {
+    return { 0, EBADF };
+  }
+  return { task.Files()[fd]->Read(buf, count), 0 };
+}
+
 #undef SYSCALL
 
 } // namespace syscall
 
 using SyscallFuncType = syscall::Result (uint64_t, uint64_t, uint64_t, 
                                  uint64_t, uint64_t, uint64_t);
-extern "C" std::array<SyscallFuncType*, 0xc> syscall_table{
+extern "C" std::array<SyscallFuncType*, 0xe> syscall_table{
   /* 0x00 */ syscall::LogString,
   /* 0x01 */ syscall::PutString,
   /* 0x02 */ syscall::Exit,
@@ -320,6 +371,8 @@ extern "C" std::array<SyscallFuncType*, 0xc> syscall_table{
   /* 0x09 */ syscall::CloseWindow,
   /* 0x0a */ syscall::ReadEvent,
   /* 0x0b */ syscall::CreateTimer,
+  /* 0x0c */ syscall::OpenFile,
+  /* 0x0d */ syscall::ReadFile,
 };
 
 void InitializeSyscall() {
