@@ -1,4 +1,4 @@
-CPPFLAGS += -I.
+CPPFLAGS += -I. -D__SCLE
 CFLAGS   += $(OPTMCONF) -Wall -g --target=x86_64-elf -ffreestanding -mcmodel=large
 CXXFLAGS += $(OPTMCONF) -Wall -g --target=x86_64-elf -ffreestanding -mcmodel=large\
             -fno-exceptions -fno-rtti -std=c++17
