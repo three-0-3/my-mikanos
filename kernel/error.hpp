@@ -30,11 +30,17 @@ class Error {
       kNoSuchTask,
       kInvalidFormat,
       kInvalidFile,
+      kIsDirectory,
+      kNoSuchEntry,
       kLastOfCode,
     };
 
     // Costructor
     Error(Code code, const char* file, int line) : code_{code}, line_{line}, file_{file} {}
+
+    Code Cause() const {
+      return this->code_;
+    }
 
     // To enable the expression such as
     // "auto err = AddDevice(bus, device, function, header_type)"
@@ -82,6 +88,8 @@ class Error {
       "kNoSuchTask",
       "kInvalidFormat",
       "kInvalidFile",
+      "kIsDirectory",
+      "kNoSuchEntry",
     };
     
     Code code_;

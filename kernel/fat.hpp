@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstddef>
 
+#include "error.hpp"
 #include "file.hpp"
 
 namespace fat {
@@ -93,6 +94,18 @@ FindFile(const char* path, unsigned long directory_cluster = 0);
 bool NameIsEqual(const DirectoryEntry& entry, const char* name);
 
 size_t LoadFile(void* buf, size_t len, const DirectoryEntry& entry);
+
+bool IsEndOfClusterchain(unsigned long cluster);
+
+uint32_t* GetFAT();
+
+unsigned long ExtendCluster(unsigned long eoc_cluster, size_t n);
+
+DirectoryEntry* AllocateEntry(unsigned long dir_cluster);
+
+void SetFileName(DirectoryEntry& entry, const char* name);
+
+WithError<DirectoryEntry*> CreateFile(const char* path);
 
 class FileDescriptor : public ::FileDescriptor{
  public:
