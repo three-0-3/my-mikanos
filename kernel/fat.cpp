@@ -210,7 +210,7 @@ void SetFileName(DirectoryEntry& entry, const char* name) {
       entry.name[i] = toupper(name[i]);
     }
     for (int i = 0; i < 3 && dot_pos[i + 1]; ++i) {
-      entry.name[8 + i] = toupper(name[i]);
+      entry.name[8 + i] = toupper(dot_pos[i + 1]);
     }
   } else {
     for (int i = 0; i < 8 && name[i]; ++i) {
