@@ -204,7 +204,7 @@ DirectoryEntry* AllocateEntry(unsigned long dir_cluster) {
 
 void SetFileName(DirectoryEntry& entry, const char* name) {
   const char* dot_pos = strrchr(name, '.');
-  memset(entry.name, '.', 8+3);
+  memset(entry.name, ' ', 8+3);
   if (dot_pos) {
     for (int i = 0; i < 8 && i < dot_pos - name; ++i) {
       entry.name[i] = toupper(name[i]);
