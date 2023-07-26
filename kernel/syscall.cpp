@@ -321,6 +321,7 @@ std::pair<fat::DirectoryEntry*, int> CreateFile(const char* path) {
   case Error::kIsDirectory: return { file, EISDIR };
   case Error::kNoSuchEntry: return { file, ENOENT };
   case Error::kNoEnoughMemory: return { file, ENOSPC };
+  default: return { file, 0 };
   }
 }
 
