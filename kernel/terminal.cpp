@@ -736,3 +736,8 @@ size_t TerminalFileDescriptor::Read(void* buf, size_t len) {
     return 1;
   }
 }
+
+size_t TerminalFileDescriptor::Write(const void* buf, size_t len) {
+  term_.Print(reinterpret_cast<const char*>(buf), len);
+  return len;
+}
