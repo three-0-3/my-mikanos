@@ -56,6 +56,11 @@ SetDSAll:
   mov gs, di
   ret
 
+global GetCR2  ; uint64_t GetCR2();
+GetCR2:
+    mov rax, cr2
+    ret
+
 global SetCSSS        ; void SetCSSS(uint16_t cs, uint16_t ss);
 SetCSSS:
   push rbp
