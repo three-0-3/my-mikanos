@@ -94,15 +94,15 @@ WithError<size_t> SetupPageMap(PageMapEntry* page_map, int page_map_level, Linea
   return { num_4kpages, MAKE_ERROR(Error::kSuccess) };
 }
 
-Error CleanPageMap(PageMapEntry* page_map, int page_map_level) {
-  for (int i = 0; i < 512; ++i) {
+Error CleanPageMap(PageMapEntry* page_map, int page_map_level, LinearAddress4Level addr) {
+  for (int i = addr.Part(page_map_level); i < 512; ++i) {
     auto entry = page_map[i];
     if (!entry.bits.present) {
       continue;
     }
 
     if (page_map_level > 1) {
-      if (auto err = CleanPageMap(entry.Pointer(), page_map_level - 1)) {
+      if (auto err = CleanPageMap(entry.Pointer(), page_map_level - 1, addr)) {
         return err;
       }
     }
@@ -143,15 +143,7 @@ Error SetupPageMaps(LinearAddress4Level addr, size_t num_4kpages) {
 
 Error CleanPageMaps(LinearAddress4Level addr) {
   auto pml4_table = reinterpret_cast<PageMapEntry*>(GetCR3());
-  auto pdp_table = pml4_table[addr.parts.pml4].Pointer();
-  pml4_table[addr.parts.pml4].data = 0;
-  if (auto err = CleanPageMap(pdp_table, 3)) {
-    return err;
-  }
-
-  const auto pdp_addr = reinterpret_cast<uintptr_t>(pdp_table);
-  const FrameID pdp_frame{pdp_addr / kBytesPerFrame};
-  return memory_manager->Free(pdp_frame, 1);
+  return CleanPageMap(pml4_table, 4, addr);
 }
 
 Error HandlePageFault(uint64_t error_code, uint64_t causal_addr) {
