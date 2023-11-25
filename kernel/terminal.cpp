@@ -435,6 +435,7 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
                     &task.OSStackPointer());
 
   task.Files().clear();
+  task.FileMaps().clear();
 
   char s[64];
   sprintf(s, "app exited. ret = %d\n", ret);
