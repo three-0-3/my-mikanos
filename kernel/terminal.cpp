@@ -427,6 +427,7 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
     (elf_last_addr + 4096) & 0xffff'ffff'ffff'f000;
   task.SetDPagingBegin(elf_next_page);
   task.SetDPagingEnd(elf_next_page);
+  task.SetFileMapEnd(0xffff'ffff'ffff'e000);
 
   auto entry_addr = elf_header->e_entry;
   int ret = CallApp(argc.value, argv, 3 << 3 | 3, entry_addr,

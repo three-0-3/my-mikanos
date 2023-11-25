@@ -175,7 +175,7 @@ Error HandlePageFault(uint64_t error_code, uint64_t causal_addr) {
   if (error_code & 1) { // P=1 interrupt by permission violation at page level
     return MAKE_ERROR(Error::kAlreadyAllocated);
   }
-  if (task.DPagingBegin() <= causal_addr || causal_addr < task.DPagingEnd()) {
+  if (task.DPagingBegin() <= causal_addr && causal_addr < task.DPagingEnd()) {
     return SetupPageMaps(LinearAddress4Level{causal_addr}, 1);
   }
   if (auto m = FindFileMapping(task.FileMaps(), causal_addr)) {
