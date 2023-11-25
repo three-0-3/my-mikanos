@@ -298,7 +298,7 @@ size_t FileDescriptor::Write(const void* buf, size_t len) {
     return (bytes + bytes_per_cluster - 1) / bytes_per_cluster;
   };
 
-  if (wr_cluster_ = 0) {
+  if (wr_cluster_ == 0) {
     if (fat_entry_.FirstCluster() != 0) {
       wr_cluster_ = fat_entry_.FirstCluster();
     } else {
