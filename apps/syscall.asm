@@ -24,4 +24,5 @@ define_syscall ReadEvent,        0x8000000a
 define_syscall CreateTimer,      0x8000000b
 define_syscall OpenFile,         0x8000000c
 define_syscall ReadFile,         0x8000000d
-define_syscall DemandPages,         0x8000000e
+define_syscall DemandPages,      0x8000000e
+define_syscall MapFile,          0x8000000f
