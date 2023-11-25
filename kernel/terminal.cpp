@@ -359,6 +359,18 @@ void Terminal::ExecuteLine() {
     task_manager->NewTask()
       .InitContext(TaskTerminal, reinterpret_cast<int64_t>(first_arg))
       .Wakeup();
+  } else if (strcmp(command, "memstat") == 0) {
+    const auto p_stat = memory_manager->Stat();
+
+    char s[64];
+    sprintf(s, "Phys used : %lu frames (%llu MiB)\n",
+        p_stat.allocated_frames,
+        p_stat.allocated_frames * kBytesPerFrame / 1024 / 1024);
+    Print(s);
+    sprintf(s, "Phys total: %lu frames (%llu MiB)\n",
+        p_stat.total_frames,
+        p_stat.total_frames * kBytesPerFrame / 1024 / 1024);
+    Print(s);
   } else if (command[0] != 0) {
     auto [ file_entry, post_slash ] = fat::FindFile(command);
     if (!file_entry) {

@@ -41,6 +41,11 @@ class FrameID {
 // null frame id to be returned when there is not enough memory
 static const FrameID kNullFrame{std::numeric_limits<size_t>::max()};
 
+struct MemoryStat {
+  size_t allocated_frames;
+  size_t total_frames;
+};
+
 class BitmapMemoryManager {
   public:
     // constructor
@@ -54,6 +59,8 @@ class BitmapMemoryManager {
 
     // set the range of the memory manager
     void SetMemoryRange(FrameID range_begin, FrameID range_end);
+
+    MemoryStat Stat() const;
 
   private:
     // max physical memory of this memory manager
