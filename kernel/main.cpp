@@ -150,6 +150,7 @@ extern "C" void KernelMainNewStack(
 
   InitializeSyscall();
 
+  app_loads = new std::map<fat::DirectoryEntry*, AppLoadInfo>;
   InitializeTask();
   Task& main_task = task_manager->CurrentTask();
   task_manager->NewTask()
