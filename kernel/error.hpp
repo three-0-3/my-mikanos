@@ -32,6 +32,7 @@ class Error {
       kInvalidFile,
       kIsDirectory,
       kNoSuchEntry,
+      kFreeTypeError,
       kLastOfCode,
     };
 
@@ -90,6 +91,7 @@ class Error {
       "kInvalidFile",
       "kIsDirectory",
       "kNoSuchEntry",
+      "kFreeTypeError",
     };
     
     Code code_;
