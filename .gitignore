@@ -1,3 +1,4 @@
+disk.img
 kernel/kernel.elf
 kernel/hankaku.bin
 *.o
