@@ -213,7 +213,10 @@ WithError<AppLoadInfo> LoadApp(fat::DirectoryEntry& file_entry, Task& task) {
 
 std::map<fat::DirectoryEntry*, AppLoadInfo>* app_loads;
 
-Terminal::Terminal(uint64_t task_id, bool show_window) : task_id_{task_id}, show_window_{show_window} {
+Terminal::Terminal(Task& task, bool show_window) : task_{task}, show_window_{show_window} {
+  for (int i = 0; i < files_.size(); ++i) {
+    files_[i] = std::make_unique<TerminalFileDescriptor>(*this);
+  }
   if (show_window) {
     window_ = std::make_shared<ToplevelWindow>(
       kColumns * 8 + 8 + ToplevelWindow::kMarginX,
@@ -318,9 +321,36 @@ void Terminal::Scroll1() {
 void Terminal::ExecuteLine() {
   char* command = &linebuf_[0];
   char* first_arg = strchr(&linebuf_[0], ' ');
+  char* redir_char = strchr(&linebuf_[0], '>');
   if (first_arg) {
     *first_arg = 0;
     ++first_arg;
+  }
+
+  auto original_stdout = files_[1];
+
+  if (redir_char) {
+    *redir_char = 0;
+    char* redir_dest = &redir_char[1];
+    while (isspace(*redir_dest)) {
+      ++redir_dest;
+    }
+
+    auto [ file, post_slash ] = fat::FindFile(redir_char);
+    if (file == nullptr) {
+      auto [ new_file, err ] = fat::CreateFile(redir_dest);
+      if (err) {
+        char s[64];
+        sprintf(s, "failed to create a redirect files: %s\n", err.Name());
+        Print(s);
+        return;
+      }
+      file = new_file;
+    } else if (file->attr == fat::Attribute::kDirectory || post_slash) {
+      Print("cannot redirect to a directory\n");
+      return;
+    }
+    files_[1] = std::make_unique<fat::FileDescriptor>(*file);
   }
 
   if(strcmp(command, "echo") == 0) {
@@ -431,6 +461,8 @@ void Terminal::ExecuteLine() {
       Print("\n");
     }
   }
+
+  files_[1] = original_stdout;
 }
 
 Error Terminal::ExecuteFile(fat::DirectoryEntry& file_entry, char* command, char* first_arg) { 
@@ -463,9 +495,8 @@ Error Terminal::ExecuteFile(fat::DirectoryEntry& file_entry, char* command, char
     return err;
   }
 
-  for (int i = 0; i < 3; ++i) {
-    task.Files().push_back(
-      std::make_unique<TerminalFileDescriptor>(task, *this));
+  for (int i = 0; i < files_.size(); ++i) {
+    task.Files().push_back(files_[i]);
   }
 
   const uint64_t elf_next_page =
@@ -544,7 +575,7 @@ void Terminal::Print(const char* s, std::optional<size_t> len) {
 
   Rectangle<int> draw_area{draw_pos, draw_size};
 
-  Message msg = MakeLayerMessage(task_id_, LayerID(), LayerOperation::DrawArea, draw_area);
+  Message msg = MakeLayerMessage(task_.ID(), LayerID(), LayerOperation::DrawArea, draw_area);
   __asm__("cli");
   task_manager->SendMessage(1, msg);
   __asm__("sti");
@@ -581,7 +612,7 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
   const bool show_window = command_line == nullptr;
   __asm__("cli");
   Task& task = task_manager->CurrentTask();
-  Terminal* terminal = new Terminal{task_id, show_window};
+  Terminal* terminal = new Terminal{task, show_window};
   if (show_window) {
     layer_manager->Move(terminal->LayerID(), {100, 200});
     active_layer->Activate(terminal->LayerID());
@@ -648,8 +679,8 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
   }
 }
 
-TerminalFileDescriptor::TerminalFileDescriptor(Task& task, Terminal& term)
-    : task_{task}, term_{term} {
+TerminalFileDescriptor::TerminalFileDescriptor(Terminal& term)
+    : term_{term} {
 }
 
 size_t TerminalFileDescriptor::Read(void* buf, size_t len) {
@@ -657,9 +688,9 @@ size_t TerminalFileDescriptor::Read(void* buf, size_t len) {
 
   while(true) {
     __asm__("cli");
-    auto msg = task_.ReceiveMessage();
+    auto msg = term_.UnderlyingTask().ReceiveMessage();
     if (!msg) {
-      task_.Sleep();
+      term_.UnderlyingTask().Sleep();
       continue;
     }
     __asm__("sti");
