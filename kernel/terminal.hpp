@@ -52,6 +52,7 @@ class Terminal {
 
     bool show_window_;
     std::array<std::shared_ptr<FileDescriptor>, 3> files_;
+    int last_exit_code_{0};
 };
 
 void TaskTerminal(uint64_t task_id, int64_t data);

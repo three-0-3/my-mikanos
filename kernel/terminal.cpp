@@ -327,6 +327,7 @@ void Terminal::ExecuteLine() {
   }
 
   auto original_stdout = files_[1];
+  int exit_code = 0;
 
   if (redir_char) {
     *redir_char = 0;
@@ -352,7 +353,11 @@ void Terminal::ExecuteLine() {
   }
 
   if(strcmp(command, "echo") == 0) {
-    if (first_arg) {
+    if (first_arg && first_arg[0] == '$') {
+      if (strcmp(&first_arg[1], "?") == 0) {
+        PrintToFD(*files_[1], "%d", last_exit_code_);
+      }
+    } else if (first_arg) {
       PrintToFD(*files_[1], first_arg);
     }
     PrintToFD(*files_[1], "\n");
@@ -376,6 +381,7 @@ void Terminal::ExecuteLine() {
       auto [ dir, post_slash ] = fat::FindFile(first_arg);
       if (dir == nullptr) {
         PrintToFD(*files_[2], "No such file or directory: %s\n", first_arg);
+        exit_code = 1;
       } else if (dir->attr == fat::Attribute::kDirectory) {
         ListAllEntries(*files_[1], dir->FirstCluster());
       } else {
@@ -383,6 +389,7 @@ void Terminal::ExecuteLine() {
         fat::FormatName(*dir, name);
         if (post_slash) {
           PrintToFD(*files_[2], "%s is not a directory\n", name);
+          exit_code = 1;
         } else {
           PrintToFD(*files_[1], "%s\n", name);
         }
@@ -395,10 +402,12 @@ void Terminal::ExecuteLine() {
     auto [ file_entry, post_slash] = fat::FindFile(first_arg);
     if (!file_entry) {
       PrintToFD(*files_[2], "no such file: %s\n", first_arg);
+      exit_code = 1;
     } else if (file_entry->attr != fat::Attribute::kDirectory && post_slash) {
       char name[13];
       fat::FormatName(*file_entry, name);
       PrintToFD(*files_[2], "%s is not a directory\n", name);
+      exit_code = 1;
     } else {
       fat::FileDescriptor fd{*file_entry};
       char u8buf[5];
@@ -435,15 +444,19 @@ void Terminal::ExecuteLine() {
     auto [ file_entry, post_slash ] = fat::FindFile(command);
     if (!file_entry) {
       PrintToFD(*files_[2], "no such command: %s\n", command);
+      exit_code = 1;
     } else if (file_entry->attr != fat::Attribute::kDirectory && post_slash) {
       char name[13];
       fat::FormatName(*file_entry, name);
       PrintToFD(*files_[2], "%s is not a directory\n", name);
+      exit_code = 1;
     } else if (auto err = ExecuteFile(*file_entry, command, first_arg)) {
       PrintToFD(*files_[2], "failed to exec file: %s\n", err.Name());
+      exit_code = 1;
     }
   }
 
+  last_exit_code_ = exit_code;
   files_[1] = original_stdout;
 }
 
