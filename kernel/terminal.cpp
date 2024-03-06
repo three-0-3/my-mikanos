@@ -499,6 +499,17 @@ void Terminal::ExecuteLine() {
     }
   }
 
+  if (pipe_fd) {
+    pipe_fd->FinishWrite();
+    __asm__("cli");
+    auto [ ec, err ] = task_manager->WaitFinish(subtask_id);
+    __asm__("sti");
+    if (err) {
+      Log(kWarn, "failed to wait finish: %s\n", err.Name());
+    }
+    exit_code = ec;
+  }
+
   last_exit_code_ = exit_code;
   files_[1] = original_stdout;
 }
@@ -665,6 +676,13 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     terminal->InputKey(0, 0, '\n');
   }
 
+  if (term_desc && term_desc->exit_after_command) {
+    delete term_desc;
+    __asm__("cli");
+    task_manager->Finish(terminal->LastExitCode());
+    __asm__("sti");
+  }
+
   auto add_blink_timer = [task_id](unsigned long t) {
     timer_manager->AddTimer(Timer{t + static_cast<int>(kTimerFreq * 0.5), 1, task_id});
   };
@@ -815,4 +833,12 @@ size_t PipeDescriptor::Write(const void* buf, size_t len) {
     __asm__("sti");
   }
   return len;
+}
+
+void PipeDescriptor::FinishWrite() {
+  Message msg{Message::kPipe};
+  msg.arg.pipe.len = 0;
+  __asm__("cli");
+  task_.SendMessage(msg);
+  __asm__("sti");
 }
