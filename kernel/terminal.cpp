@@ -208,6 +208,29 @@ WithError<AppLoadInfo> LoadApp(fat::DirectoryEntry& file_entry, Task& task) {
   return { app_load, err };
 }
 
+fat::DirectoryEntry* FindCommand(const char* command,
+                                 unsigned long dir_cluster = 0) {
+  auto file_entry = fat::FindFile(command, dir_cluster);
+  if (file_entry.first != nullptr &&
+      (file_entry.first->attr == fat::Attribute::kDirectory ||
+       file_entry.second)) {
+    return nullptr;
+  } else if (file_entry.first) {
+    return file_entry.first;
+  }
+
+  if (dir_cluster != 0 || strchr(command, '/') != nullptr) {
+    return nullptr;
+  }
+
+  auto apps_entry = fat::FindFile("apps");
+  if (apps_entry.first == nullptr ||
+      apps_entry.first->attr != fat::Attribute::kDirectory) {
+    return nullptr;
+  }
+  return FindCommand(command, apps_entry.first->FirstCluster());
+}
+
 }
 
 std::map<fat::DirectoryEntry*, AppLoadInfo>* app_loads;
@@ -479,14 +502,9 @@ void Terminal::ExecuteLine() {
         p_stat.total_frames,
         p_stat.total_frames * kBytesPerFrame / 1024 / 1024);
   } else if (command[0] != 0) {
-    auto [ file_entry, post_slash ] = fat::FindFile(command);
+    auto file_entry = FindCommand(command);
     if (!file_entry) {
       PrintToFD(*files_[2], "no such command: %s\n", command);
-      exit_code = 1;
-    } else if (file_entry->attr != fat::Attribute::kDirectory && post_slash) {
-      char name[13];
-      fat::FormatName(*file_entry, name);
-      PrintToFD(*files_[2], "%s is not a directory\n", name);
       exit_code = 1;
     } else {
       auto [ ec, err ] = ExecuteFile(*file_entry, command, first_arg);
