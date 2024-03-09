@@ -357,7 +357,9 @@ void Terminal::ExecuteLine() {
   char* pipe_char = strchr(&linebuf_[0], '|');
   if (first_arg) {
     *first_arg = 0;
-    ++first_arg;
+    do {
+      ++first_arg;
+    } while (isspace(*first_arg));
   }
 
   auto original_stdout = files_[1];
