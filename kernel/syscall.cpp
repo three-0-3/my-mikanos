@@ -190,21 +190,10 @@ SYSCALL(WinDrawLine) {
 
 SYSCALL(CloseWindow) {
     const unsigned int layer_id = arg1 & 0xffffffff;
-    const auto layer = layer_manager->FindLayer(layer_id);
-
-    if (layer == nullptr) {
+    const auto err = CloseLayer(layer_id);
+    if (err.Cause() == Error::kNoSuchEntry) {
       return { EBADF, 0 };
     }
-
-    const auto layer_pos = layer->GetPosition();
-    const auto win_size = layer->GetWindow()->Size();
-
-    __asm__("cli");
-    active_layer->Activate(0);
-    layer_manager->RemoveLayer(layer_id);
-    layer_manager->Draw({layer_pos, win_size});
-    layer_task_map->erase(layer_id);
-    __asm__("sti");
 
     return { 0, 0 };
 }
