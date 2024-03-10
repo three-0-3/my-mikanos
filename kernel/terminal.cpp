@@ -728,6 +728,9 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     __asm__("sti");
 
     switch (msg->type) {
+    case Message::kWindowClose:
+      Log(kWarn, "window close message received\n");
+      break;
     case Message::kTimerTimeout:
       add_blink_timer(msg->arg.timer.timeout);
       if (show_window && window_isactive) {

@@ -7,6 +7,13 @@
 #include "graphics.hpp"
 #include "frame_buffer.hpp"
 
+enum class WindowRegion {
+  kTitleBar,
+  kCloseButton,
+  kBorder,
+  kOther,
+};
+
 class Window {
   public:
     class WindowWriter : public PixelWriter {
@@ -58,6 +65,8 @@ class Window {
     virtual void Activate() {}
     virtual void Deactivate() {}
 
+    virtual WindowRegion GetWindowRegion(Vector2D<int> pos);
+
   private:
     // width/height of the drawing area of this window by pixel
     int width_, height_;
@@ -98,6 +107,7 @@ class ToplevelWindow : public Window {
 
     virtual void Activate() override;
     virtual void Deactivate() override;
+    virtual WindowRegion GetWindowRegion(Vector2D<int> pos) override;
 
     InnerAreaWriter* InnerWriter() { return &inner_writer_; }
     Vector2D<int> InnerSize() const;
